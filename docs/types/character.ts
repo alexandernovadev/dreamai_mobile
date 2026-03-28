@@ -20,12 +20,9 @@ export enum Archetype {
 export interface Character {
   /** Id en esta sesión o segmento (instancia). */
   id: string;
-  /** Si lo unes a un personaje recurrente en tu base de datos (misma figura en varios sueños). */
-  catalogCharacterId?: string;
-  rawName: string;
-  canonicalName: string;
+  name: string;
+  description: string;
   isKnown: boolean;
   archetype: Archetype;
-  /** Ilustración o foto elegida por el usuario (p. ej. `file://`, `content://`, `https://`). */
   imageUri?: string;
 }

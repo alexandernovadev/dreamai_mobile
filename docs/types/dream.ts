@@ -1,5 +1,5 @@
 import type { Character } from "./character";
-import type { DreamObject } from "./dream-object";
+import type { ObjectsDream } from "./dream-object";
 import type { Feeling } from "./feeling";
 import type { Location } from "./location";
 
@@ -50,7 +50,8 @@ export interface DreamSegmentAnalysis {
   entities: {
     characters: Character[];
     locations: Location[];
-    objects: DreamObject[];
+    objects: ObjectsDream[];
+    feelings: Feeling[];
   };
   isLucid: boolean;
 }
@@ -59,7 +60,6 @@ export interface DreamSegment {
   id: string;
   order: number;
   rawText: string;
-  feelings: Feeling[];
   /**
    * Ausente en borrador o hasta que termines la extracción.
    * En REFINING puede ir completándose poco a poco.
