@@ -1,12 +1,26 @@
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { setStatusBarHidden, StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
+import * as SystemUI from 'expo-system-ui';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 export default function RootLayout() {
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync('#000000');
+    setStatusBarHidden(true, 'fade');
+
+    if (Platform.OS === 'android') {
+      void NavigationBar.setVisibilityAsync('hidden');
+    }
+  }, []);
+
   return (
-    <>
+    <SafeAreaProvider>
       <Stack screenOptions={{ headerShown: false }} />
-      <StatusBar style="light" />
-    </>
+      <StatusBar hidden style="light" hideTransitionAnimation="fade" />
+    </SafeAreaProvider>
   );
 }
