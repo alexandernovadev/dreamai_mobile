@@ -1,50 +1,55 @@
-# Welcome to your Expo app 👋
+# DreamAI — diario y análisis de sueños
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil (Expo / React Native) pensada para **registrar sueños**, **analizarlos con criterio** y **descubrir patrones** en el tiempo: qué se repite, qué figuras o escenarios vuelven, y cómo eso se relaciona con tu vida despierta.
 
-## Get started
+## Para qué existe
 
-1. Install dependencies
+El sueño no es ruido aleatorio: suele condensar tensiones, deseos no dichos, memorias y modos en los que te relacionas contigo y con los demás. Esta app apoya un proceso sencillo pero profundo:
 
-   ```bash
-   npm install
-   ```
+- **Registrar** el sueño con fidelidad (texto por segmentos, orden narrativo).
+- **Estructurar** lo que aparece: perspectiva (actor u observador), personajes con arquetipos inspirados en la tradición junguiana, uno o varios escenarios por segmento, lucidez.
+- **Reflexionar** en cada sesión: tus conclusiones en un único espacio de texto, para anclar sentido sin sustituir tu criterio por uno automático.
+- **Explorar en el tiempo** (dirección del producto): repeticiones, temas recurrentes y “por qué ahora” — no una respuesta única de laboratorio, sino material para tu propia lectura y, si quieres, para diálogo con un profesional.
 
-2. Start the app
+La ciencia aún debate *por qué* soñamos (consolidación de memoria, simulación emocional, regulación…). La app no pretende resolver ese debate: **te da herramientas para ver *qué* sueñas y *qué* podría estar en juego** detrás de imágenes y escenas.
 
-   ```bash
-   npx expo start
-   ```
+## Modelo de datos (visión actual)
 
-In the output, you'll find options to open the app in a
+El contrato principal vive en `docs/types.ts`:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Sesión de sueño** (`DreamSession`): fecha, reflexiones tuyas, lista de segmentos.
+- **Segmento** (`DreamSegment`): trozo ordenado del relato con análisis asociado.
+- **Análisis**: perspectiva, personajes (nombre, si los reconoces, arquetipo), **varias ubicaciones** por segmento, lucidez.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Los arquetipos incluyen sombra, ánima/ánimus, figura sabia, persona y *desconocido*, para no forzar etiquetas donde no encajan.
 
-## Get a fresh project
+## Desarrollo
 
-When you're ready, run:
+Requisitos: Node.js y npm (o el gestor que uses con Expo).
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Desde la salida de Expo puedes abrir la app en dispositivo (Expo Go), emulador Android o simulador iOS, o en web según la configuración del proyecto.
 
-## Learn more
+```bash
+npm run android   # Android
+npm run ios       # iOS
+npm run web       # Web
+npm run lint      # ESLint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Stack
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- [Expo](https://expo.dev) (~54) con [Expo Router](https://docs.expo.dev/router/introduction/) para rutas basadas en archivos.
+- React 19 y React Native 0.81.
 
-## Join the community
+## Licencia y privacidad
 
-Join our community of developers creating universal apps.
+El contenido de los sueños es sensible. Cualquier almacenamiento local o sincronización futura debería tratarse con criterios claros de privacidad (documentarlos cuando exista esa capa en el producto).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+*Proyecto en evolución: la narrativa del README se actualiza con las funcionalidades reales de la app.*

@@ -4,10 +4,20 @@ export enum Perspective {
 }
 
 export enum Archetype {
+  /** Lo reprimido o negado: miedos, impulsos,
+   * vergüenza; el “otro” en el sueño que refleja lo que no integramos. */
   Shadow = "SHADOW",
+  /** Imagen del contrasexual en el psiquismo (ánima / ánimus):
+   * vínculo afectivo, inspiración o tirania interior. */
   AnimaAnimus = "ANIMA_ANIMUS",
+  /** Figura de sabiduría o guía: anciano, maestro, terapeuta onírico;
+   *  orden de sentido frente al caos. */
   WiseFigure = "WISE_FIGURE",
+  /** La máscara social: rol público, apariencia, adaptación;
+   * cómo nos presentamos ante otros. */
   Persona = "PERSONA",
+  /** No encaja claramente en las categorías anteriores
+   * o aún no se ha clasificado. */
   Unknown = "UNKNOWN",
 }
 
@@ -23,7 +33,7 @@ interface Location {
   isFamiliar: boolean;
   setting: "URBAN" | "NATURE" | "INDOOR" | "ABSTRACT";
   description: string;
-  biographicalContext?: string; // Ej: "Panadería de la infancia"
+  biographicalContext?: string;
 }
 
 interface DreamSegment {
@@ -34,9 +44,8 @@ interface DreamSegment {
     perspective: Perspective;
     entities: {
       characters: Character[];
-      location: Location;
+      locations: Location[];
     };
-    // Quitamos metrics y simplificamos lucidez
     isLucid: boolean;
   };
 }
@@ -44,6 +53,6 @@ interface DreamSegment {
 export interface DreamSession {
   readonly id: string;
   timestamp: Date;
-  userReflections: string; // Un solo campo de texto para tus conclusiones
+  userReflections: string;
   dreams: DreamSegment[];
 }
