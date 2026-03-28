@@ -26,4 +26,6 @@ export interface Character {
   canonicalName: string;
   isKnown: boolean;
   archetype: Archetype;
+  /** Ilustración o foto elegida por el usuario (p. ej. `file://`, `content://`, `https://`). */
+  imageUri?: string;
 }

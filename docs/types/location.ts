@@ -12,4 +12,6 @@ export interface Location {
   setting: LocationSetting;
   description: string;
   biographicalContext?: string;
+  /** Imagen opcional si el usuario asocia una referencia visual al lugar. */
+  imageUri?: string;
 }

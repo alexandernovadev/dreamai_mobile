@@ -20,7 +20,7 @@ sequenceDiagram
     App->>App: status = Refining
     opt Sugerencias automáticas
         App->>IA: Texto del sueño (o segmento)
-        IA-->>App: Propuesta: personajes, lugares, etiquetas
+        IA-->>App: Propuesta: personajes, lugares, objetos, etiquetas
         App-->>U: Muestra sugerencias (editable)
     end
     U->>App: Acepta, corrige o crea todo manualmente
@@ -29,7 +29,7 @@ sequenceDiagram
         Cat-->>App: catalogCharacterId
         App->>App: Enlaza aparición en Character
     end
-    U->>App: Completa analysis por segmento (perspectiva, entidades, lucidez)
+    U->>App: Completa analysis por segmento (perspectiva, personajes, lugares, objetos, lucidez)
 
     Note over U,Cat: Paso 3 — Cierre estructural (Structured)
     U->>App: Confirma que el modelo onírico está listo

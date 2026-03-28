@@ -1,4 +1,5 @@
 import type { Character } from "./character";
+import type { DreamObject } from "./dream-object";
 import type { Feeling } from "./feeling";
 import type { Location } from "./location";
 
@@ -36,7 +37,7 @@ export enum DreamKind {
 export enum DreamSessionStatus {
   /** 1 — Solo captura: narrativa libre; aún no segmentas ni extraes entidades. */
   Draft = "DRAFT",
-  /** 2 — Refinas texto, segmentas, feelings, personajes y lugares (manual o sugerido). */
+  /** 2 — Refinas texto, segmentas, feelings, personajes, lugares y objetos (manual o sugerido). */
   Refining = "REFINING",
   /** 3 — Modelo onírico “completo”: entidades y análisis listos para guardar/patrón. */
   Structured = "STRUCTURED",
@@ -49,6 +50,7 @@ export interface DreamSegmentAnalysis {
   entities: {
     characters: Character[];
     locations: Location[];
+    objects: DreamObject[];
   };
   isLucid: boolean;
 }
