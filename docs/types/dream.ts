@@ -1,5 +1,5 @@
 import type { Character } from "./character";
-import type { ObjectsDream } from "./dream-object";
+import type { DreamObject } from "./dream-object";
 import type { Feeling } from "./feeling";
 import type { Location } from "./location";
 
@@ -32,7 +32,7 @@ export enum DreamKind {
 
 /**
  * Flujo de una entrada: texto → refinamiento/extracción → cierre estructural → tu reflexión.
- * La IA puede asistir en REFINING; tú validas y enlazas personajes del catálogo si aplica.
+ * En REFINING validas y enlazas personajes del catálogo si aplica.
  */
 export enum DreamSessionStatus {
   /** 1 — Solo captura: narrativa libre; aún no segmentas ni extraes entidades. */
@@ -50,7 +50,7 @@ export interface DreamSegmentAnalysis {
   entities: {
     characters: Character[];
     locations: Location[];
-    objects: ObjectsDream[];
+    objects: DreamObject[];
     feelings: Feeling[];
   };
   isLucid: boolean;
@@ -71,7 +71,11 @@ export interface DreamSession {
   readonly id: string;
   timestamp: Date;
   status: DreamSessionStatus;
-  /** Registro principal de la noche: pesadilla, normal, fantasía, etc. */
+  /**
+   * Registro principal de la noche: pesadilla, normal, fantasía, etc.
+   * En `Draft` y `Refining` usar `Unknown` hasta el cierre estructural (`Structured`),
+   * donde el usuario confirma o cambia la clasificación.
+   */
   dreamKind: DreamKind;
   /**
    * Primer volcado de texto antes de segmentar (paso 1).
@@ -85,5 +89,9 @@ export interface DreamSession {
   relatedLifeEventIds?: string[];
   /** Paso 4 — qué te dejó el sueño, interpretación propia, preguntas. */
   userThought?: string;
+  /**
+   * Segmentos del relato. Puede ser `[]` en borrador hasta que el usuario añada partes;
+   * las reglas de “al menos un segmento” son de validación por `status`, no del tipo.
+   */
   dreams: DreamSegment[];
 }

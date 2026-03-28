@@ -20,6 +20,8 @@ export enum Archetype {
 export interface Character {
   /** Id en esta sesión o segmento (instancia). */
   id: string;
+  /** Si el personaje viene del catálogo recurrente (misma API que en objetos). */
+  catalogCharacterId?: string;
   name: string;
   description: string;
   isKnown: boolean;
