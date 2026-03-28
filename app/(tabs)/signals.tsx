@@ -1,14 +1,10 @@
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '@/components/ui';
 import { colors, gradients, spacing, typography } from '@/theme';
 
-export default function OtraPantalla() {
-  const router = useRouter();
+export default function SignalsScreen() {
   const bg = gradients.background;
-
   return (
     <LinearGradient
       colors={[...bg.colors]}
@@ -18,13 +14,8 @@ export default function OtraPantalla() {
     >
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         <View style={styles.content}>
-          <Text style={styles.title}>Otra pantalla</Text>
-          <Text style={styles.subtitle}>
-            Ruta: /otra · expo-router
-          </Text>
-          <Button variant="purple" onPress={() => router.back()}>
-            Volver
-          </Button>
+          <Text style={styles.title}>Signals</Text>
+          <Text style={styles.subtitle}>Señales — coming soon.</Text>
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -32,17 +23,12 @@ export default function OtraPantalla() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  safe: {
-    flex: 1,
-  },
+  root: { flex: 1 },
+  safe: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-    gap: spacing.lg,
+    paddingTop: spacing.lg,
   },
   title: {
     fontSize: typography.sizes.hero,
@@ -50,8 +36,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   subtitle: {
-    fontSize: typography.sizes.sm,
+    marginTop: spacing.sm,
+    fontSize: typography.sizes.md,
     color: colors.textMuted,
-    marginBottom: spacing.md,
   },
 });

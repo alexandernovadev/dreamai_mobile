@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Pressable,
@@ -45,8 +44,7 @@ const THEME_OPTIONS: SelectOption[] = [
   { value: 'system', label: 'Según sistema' },
 ];
 
-export default function Index() {
-  const router = useRouter();
+export default function CatalogScreen() {
   const bg = gradients.background;
   const [tab, setTab] = useState<CatalogTab>('buttons');
   const [email, setEmail] = useState('');
@@ -70,19 +68,13 @@ export default function Index() {
       end={bg.end}
       style={styles.root}
     >
-      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
         <KeyboardAvoidingScroll
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.screenTitle}>Catálogo</Text>
           <Text style={styles.screenSubtitle}>Componentes UI</Text>
-
-          <View style={styles.navRow}>
-            <Button variant="purple" onPress={() => router.push('/otra')}>
-              Ir a otra pantalla
-            </Button>
-          </View>
 
           <ScrollView
             horizontal
@@ -491,9 +483,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
     marginBottom: spacing.md,
-  },
-  navRow: {
-    marginBottom: spacing.lg,
   },
   tabBar: {
     flexDirection: 'row',
