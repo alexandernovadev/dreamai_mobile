@@ -5,6 +5,8 @@ export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 export { Input } from './Input';
 export type { InputProps } from './Input';
+export { KeyboardAvoidingScroll } from './KeyboardAvoidingScroll';
+export type { KeyboardAvoidingScrollProps } from './KeyboardAvoidingScroll';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 export { Radio } from './Radio';

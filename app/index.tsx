@@ -15,6 +15,7 @@ import {
   Button,
   Checkbox,
   Input,
+  KeyboardAvoidingScroll,
   Modal,
   Radio,
   Select,
@@ -70,10 +71,9 @@ export default function Index() {
       style={styles.root}
     >
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-        <ScrollView
+        <KeyboardAvoidingScroll
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.screenTitle}>Catálogo</Text>
           <Text style={styles.screenSubtitle}>Componentes UI</Text>
@@ -464,7 +464,7 @@ export default function Index() {
               </Modal>
             </View>
           )}
-        </ScrollView>
+        </KeyboardAvoidingScroll>
       </SafeAreaView>
     </LinearGradient>
   );
