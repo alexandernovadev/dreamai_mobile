@@ -6,22 +6,21 @@ Aplicación móvil (Expo / React Native) pensada para **registrar sueños**, **a
 
 El sueño no es ruido aleatorio: suele condensar tensiones, deseos no dichos, memorias y modos en los que te relacionas contigo y con los demás. Esta app apoya un proceso sencillo pero profundo:
 
-- **Registrar** el sueño con fidelidad (texto por segmentos, orden narrativo).
-- **Estructurar** lo que aparece: perspectiva (actor u observador), personajes con arquetipos inspirados en la tradición junguiana, uno o varios escenarios por segmento, lucidez.
-- **Reflexionar** en cada sesión: tus conclusiones en un único espacio de texto, para anclar sentido sin sustituir tu criterio por uno automático.
+- **Registrar** el sueño con fidelidad (texto libre o ya por segmentos).
+- **Refinar y extraer** personajes, lugares y emociones (a mano o con IA que tú validas); los personajes pueden enlazarse a figuras recurrentes en tu base.
+- **Cerrar** la estructura cuando el relato onírico está modelado; después **añadir tu pensamiento** sobre el sueño.
 - **Explorar en el tiempo** (dirección del producto): repeticiones, temas recurrentes y “por qué ahora” — no una respuesta única de laboratorio, sino material para tu propia lectura y, si quieres, para diálogo con un profesional.
 
 La ciencia aún debate *por qué* soñamos (consolidación de memoria, simulación emocional, regulación…). La app no pretende resolver ese debate: **te da herramientas para ver *qué* sueñas y *qué* podría estar en juego** detrás de imágenes y escenas.
 
 ## Modelo de datos (visión actual)
 
-El contrato principal vive en `docs/types.ts`:
+El dominio está partido en módulos bajo `docs/types/` (`character`, `location`, `feeling`, `dream`) y se reexporta desde `docs/types/index.ts` (importable como `@/docs/types`).
 
-- **Sesión de sueño** (`DreamSession`): fecha, reflexiones tuyas, lista de segmentos.
-- **Segmento** (`DreamSegment`): trozo ordenado del relato con análisis asociado.
-- **Análisis**: perspectiva, personajes (nombre, si los reconoces, arquetipo), **varias ubicaciones** por segmento, lucidez.
+- **Sesión** (`DreamSession`): fecha, **`status`** (`Draft` → `Refining` → `Structured` → `ReflectionsDone`), **`dreamKind`**, **`rawNarrative`** opcional (primer volcado), **`userThought`** opcional (paso final), vínculos opcionales a **`relatedLifeEventIds`**, segmentos.
+- **Segmento** (`DreamSegment`): texto, **`feelings`**, **`analysis`** opcional hasta que termines la extracción (perspectiva, personajes, lugares, lucidez).
 
-Los arquetipos incluyen sombra, ánima/ánimus, figura sabia, persona y *desconocido*, para no forzar etiquetas donde no encajan.
+Los arquetipos y `FeelingKind` son etiquetas de trabajo; **`catalogCharacterId`** en un personaje permite enlazar la aparición a un registro recurrente en base de datos.
 
 ## Desarrollo
 

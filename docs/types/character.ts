@@ -1,8 +1,3 @@
-export enum Perspective {
-  Actor = "ACTOR",
-  Observer = "OBSERVER",
-}
-
 export enum Archetype {
   /** Lo reprimido o negado: miedos, impulsos,
    * vergüenza; el “otro” en el sueño que refleja lo que no integramos. */
@@ -21,38 +16,14 @@ export enum Archetype {
   Unknown = "UNKNOWN",
 }
 
-interface Character {
+/** Personaje onírico: quién aparece y con qué peso simbólico aproximado. */
+export interface Character {
+  /** Id en esta sesión o segmento (instancia). */
   id: string;
+  /** Si lo unes a un personaje recurrente en tu base de datos (misma figura en varios sueños). */
+  catalogCharacterId?: string;
   rawName: string;
   canonicalName: string;
   isKnown: boolean;
   archetype: Archetype;
-}
-
-interface Location {
-  isFamiliar: boolean;
-  setting: "URBAN" | "NATURE" | "INDOOR" | "ABSTRACT";
-  description: string;
-  biographicalContext?: string;
-}
-
-interface DreamSegment {
-  id: string;
-  order: number;
-  rawText: string;
-  analysis: {
-    perspective: Perspective;
-    entities: {
-      characters: Character[];
-      locations: Location[];
-    };
-    isLucid: boolean;
-  };
-}
-
-export interface DreamSession {
-  readonly id: string;
-  timestamp: Date;
-  userReflections: string;
-  dreams: DreamSegment[];
 }
