@@ -13,15 +13,25 @@ import {
   Badge,
   badgeLabelStyle,
   Button,
+  Checkbox,
   Input,
+  Modal,
+  Radio,
   Select,
   type SelectOption,
+  Slider,
   Switch,
   Textarea,
 } from '@/components/ui';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
-type CatalogTab = 'buttons' | 'inputs' | 'badges' | 'select' | 'switches';
+type CatalogTab =
+  | 'buttons'
+  | 'inputs'
+  | 'badges'
+  | 'select'
+  | 'switches'
+  | 'extra';
 
 const LANGUAGE_OPTIONS: SelectOption[] = [
   { value: 'es', label: 'Español' },
@@ -45,6 +55,12 @@ export default function Index() {
   const [swNotif, setSwNotif] = useState(true);
   const [swHaptics, setSwHaptics] = useState(false);
   const [swDisabled] = useState(false);
+  const [cbA, setCbA] = useState(false);
+  const [cbB, setCbB] = useState(true);
+  const [radioPet, setRadioPet] = useState<'dog' | 'cat' | 'bird'>('dog');
+  const [sliderVal, setSliderVal] = useState(42);
+  const [sliderFine, setSliderFine] = useState(0.35);
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <LinearGradient
@@ -166,6 +182,25 @@ export default function Index() {
                 ]}
               >
                 Switch
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === 'extra' }}
+              onPress={() => setTab('extra')}
+              style={({ pressed }) => [
+                styles.tab,
+                tab === 'extra' && styles.tabActive,
+                pressed && styles.tabPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  tab === 'extra' && styles.tabLabelActive,
+                ]}
+              >
+                Más
               </Text>
             </Pressable>
           </ScrollView>
@@ -315,7 +350,7 @@ export default function Index() {
                 />
               </View>
             </View>
-          ) : (
+          ) : tab === 'switches' ? (
             <View style={styles.section}>
               <Text style={styles.sectionHint}>
                 Interruptores nativos con colores del tema
@@ -339,6 +374,94 @@ export default function Index() {
                   disabled
                 />
               </View>
+            </View>
+          ) : (
+            <View style={styles.section}>
+              <Text style={styles.sectionHint}>
+                Checkbox, radio, slider y modal centrado
+              </Text>
+
+              <Text style={styles.subsectionLabel}>Checkbox</Text>
+              <View style={styles.stack}>
+                <Checkbox
+                  label="Opción A"
+                  checked={cbA}
+                  onCheckedChange={setCbA}
+                />
+                <Checkbox
+                  label="Opción B (marcada por defecto)"
+                  checked={cbB}
+                  onCheckedChange={setCbB}
+                  hint="Puedes combinar con validación."
+                />
+                <Checkbox
+                  label="Deshabilitado"
+                  checked={false}
+                  onCheckedChange={() => {}}
+                  disabled
+                />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Radio</Text>
+              <View style={styles.stack}>
+                <Radio
+                  label="Perro"
+                  selected={radioPet === 'dog'}
+                  onPress={() => setRadioPet('dog')}
+                />
+                <Radio
+                  label="Gato"
+                  selected={radioPet === 'cat'}
+                  onPress={() => setRadioPet('cat')}
+                />
+                <Radio
+                  label="Pájaro"
+                  selected={radioPet === 'bird'}
+                  onPress={() => setRadioPet('bird')}
+                />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Slider</Text>
+              <View style={styles.stack}>
+                <Slider
+                  label="Valor 0–100"
+                  value={sliderVal}
+                  onValueChange={setSliderVal}
+                  minimumValue={0}
+                  maximumValue={100}
+                  step={1}
+                />
+                <Slider
+                  label="0–1 (paso 0.01)"
+                  value={sliderFine}
+                  onValueChange={setSliderFine}
+                  minimumValue={0}
+                  maximumValue={1}
+                  step={0.01}
+                  formatValue={(v) => v.toFixed(2)}
+                />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Modal</Text>
+              <View style={styles.stack}>
+                <Button
+                  variant="teal"
+                  onPress={() => setModalOpen(true)}
+                >
+                  Abrir modal
+                </Button>
+              </View>
+
+              <Modal
+                visible={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title="Ejemplo de modal"
+                closeLabel="Listo"
+              >
+                <Text style={styles.modalBody}>
+                  Contenido arbitrario: texto, formulario o lo que necesites.
+                </Text>
+              </Modal>
             </View>
           )}
         </ScrollView>
@@ -412,6 +535,18 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     marginBottom: spacing.lg,
+  },
+  subsectionLabel: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  modalBody: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.md,
+    lineHeight: 22,
   },
   stack: {
     gap: spacing.md,

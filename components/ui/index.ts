@@ -1,10 +1,18 @@
 export { Badge, badgeLabelStyle } from './Badge';
 export type { BadgeProps } from './Badge';
 export { Button } from './Button';
+export { Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
 export { Input } from './Input';
 export type { InputProps } from './Input';
+export { Modal } from './Modal';
+export type { ModalProps } from './Modal';
+export { Radio } from './Radio';
+export type { RadioProps } from './Radio';
 export { Select } from './Select';
 export type { SelectOption, SelectProps } from './Select';
+export { Slider } from './Slider';
+export type { SliderProps } from './Slider';
 export { Switch } from './Switch';
 export type { SwitchProps } from './Switch';
 export { Textarea } from './Textarea';
