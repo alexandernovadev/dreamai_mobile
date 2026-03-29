@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +34,7 @@ import {
   type DreamSession,
 } from '@/lib/docs/types/dream';
 import type { LifeEvent } from '@/lib/docs/types/life-event';
+import { effectiveDreamDate, isLikelyPlaceholderDreamTimestamp } from '@/lib/dreamDate';
 
 // ────────────────────────────────────────
 // Tab definitions
@@ -40,11 +42,20 @@ import type { LifeEvent } from '@/lib/docs/types/life-event';
 const TABS = ['Draft', 'Refining', 'Structured', 'Reflection'] as const;
 type Tab = (typeof TABS)[number];
 
+const NATIVE_DATE_PICKER = Platform.OS === 'ios' || Platform.OS === 'android';
+
 const TAB_LABEL: Record<Tab, string> = {
   Draft: '1. Borrador',
   Refining: '2. Refinar',
   Structured: '3. Estructura',
   Reflection: '4. Reflexión',
+};
+
+const TAB_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
+  Draft: 'document-text-outline',
+  Refining: 'color-wand-outline',
+  Structured: 'grid-outline',
+  Reflection: 'bulb-outline',
 };
 
 const STATUS_LABEL: Record<DreamSessionStatus, string> = {
@@ -130,7 +141,14 @@ function TabDraft({ session, editing, onSessionChange }: TabProps) {
   if (!editing) {
     return (
       <ScrollView contentContainerStyle={styles.tabScrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.dreamText}>{initial || 'Sin texto'}</Text>
+        {initial ? (
+          <Text style={styles.dreamText}>{initial}</Text>
+        ) : (
+          <View style={styles.emptyHintRow}>
+            <Ionicons name="document-text-outline" size={20} color={colors.textMuted} />
+            <Text style={styles.tabHint}>Sin texto aún</Text>
+          </View>
+        )}
       </ScrollView>
     );
   }
@@ -301,20 +319,32 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
     return (
       <ScrollView contentContainerStyle={styles.tabScrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Tipo de sueño</Text>
+          <View style={styles.fieldLabelRow}>
+            <Ionicons name="cloudy-night-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.fieldLabel}>Tipo de sueño</Text>
+          </View>
           <Text style={styles.fieldValue}>{kindLabel}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Perspectiva</Text>
+          <View style={styles.fieldLabelRow}>
+            <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.fieldLabel}>Perspectiva</Text>
+          </View>
           <Text style={styles.fieldValue}>{perspLabel}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>¿Lúcido?</Text>
+          <View style={styles.fieldLabelRow}>
+            <Ionicons name="flash-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.fieldLabel}>¿Lúcido?</Text>
+          </View>
           <Text style={styles.fieldValue}>{isLucid ? 'Sí' : 'No'}</Text>
         </View>
         {selectedEventNames.length > 0 && (
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Eventos de vida</Text>
+            <View style={styles.fieldLabelRow}>
+              <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.fieldLabel}>Eventos de vida</Text>
+            </View>
             <View style={styles.chipWrap}>
               {selectedEventNames.map((ev) => (
                 <Chip key={ev.id} label={ev.title} variant="teal" icon="calendar" />
@@ -353,7 +383,10 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
       {/* Life events */}
       <View style={styles.fieldRow}>
         <View style={styles.eventLabelRow}>
-          <Text style={styles.fieldLabel}>Eventos de vida relacionados</Text>
+          <View style={styles.fieldLabelRow}>
+            <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.fieldLabel}>Eventos de vida relacionados</Text>
+          </View>
           <Pressable onPress={openAddEvent} hitSlop={12} style={styles.addEventBtn}>
             <Ionicons name="add-circle" size={32} color={colors.accent} />
           </Pressable>
@@ -395,7 +428,10 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
             onPress={() => setShowAddEvent(false)}
           />
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Nuevo evento de vida</Text>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name="calendar" size={22} color={colors.accent} />
+              <Text style={styles.modalTitle}>Nuevo evento de vida</Text>
+            </View>
             <Input
               label="Título"
               placeholder="Ej: Viaje a la playa, mudanza…"
@@ -478,7 +514,10 @@ function TabReflection({ session, editing, onSessionChange }: TabProps) {
         {initial ? (
           <Text style={styles.dreamText}>{initial}</Text>
         ) : (
-          <Text style={styles.tabHint}>Aún sin reflexión.</Text>
+          <View style={styles.emptyHintRow}>
+            <Ionicons name="bulb-outline" size={20} color={colors.textMuted} />
+            <Text style={styles.tabHint}>Aún sin reflexión.</Text>
+          </View>
         )}
       </ScrollView>
     );
@@ -490,7 +529,10 @@ function TabReflection({ session, editing, onSessionChange }: TabProps) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
     >
-      <Text style={styles.tabHint}>¿Qué te dejó este sueño?</Text>
+      <View style={styles.hintRow}>
+        <Ionicons name="bulb-outline" size={18} color={colors.accent} />
+        <Text style={styles.tabHintAccent}>¿Qué te dejó este sueño?</Text>
+      </View>
 
       <TextInput
         style={styles.fullTextarea}
@@ -535,6 +577,14 @@ export default function DreamDetailScreen() {
   const [session, setSession] = useState<DreamSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('Draft');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pendingDate, setPendingDate] = useState(() => new Date());
+  const [dateSaving, setDateSaving] = useState(false);
+  const placeholderTimestampFixSent = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    placeholderTimestampFixSent.current.clear();
+  }, [id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -559,6 +609,27 @@ export default function DreamDetailScreen() {
     }, [id]),
   );
 
+  useEffect(() => {
+    if (loading || !session) return;
+    if (!isLikelyPlaceholderDreamTimestamp(session.timestamp)) return;
+    if (placeholderTimestampFixSent.current.has(session.id)) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const now = new Date();
+        const updated = await dreamSessionsService.update(session.id, { timestamp: now });
+        if (cancelled) return;
+        placeholderTimestampFixSent.current.add(session.id);
+        setSession(updated);
+      } catch {
+        // permite reintentar si el usuario vuelve a entrar o cambia la sesión
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, session]);
+
   // ── Loading / error states ──
   if (loading) {
     return (
@@ -574,8 +645,10 @@ export default function DreamDetailScreen() {
     return (
       <LinearGradient colors={[...bg.colors]} start={bg.start} end={bg.end} style={styles.root}>
         <View style={[styles.center, { paddingTop: insets.top }]}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={styles.errorText}>Sueño no encontrado</Text>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={() => router.back()} style={styles.backLink}>
+            <Ionicons name="arrow-back" size={16} color={colors.accent} />
             <Text style={styles.linkText}>Volver</Text>
           </Pressable>
         </View>
@@ -587,6 +660,31 @@ export default function DreamDetailScreen() {
 
   function handleSessionChange(updated: DreamSession) {
     setSession(updated);
+  }
+
+  function openDreamDatePicker() {
+    if (!session || !editing || !NATIVE_DATE_PICKER) return;
+    setPendingDate(effectiveDreamDate(session));
+    setDatePickerOpen(true);
+  }
+
+  async function commitDreamDate(next: Date) {
+    if (!session) return;
+    const placeholder = isLikelyPlaceholderDreamTimestamp(session.timestamp);
+    if (!placeholder && next.getTime() === session.timestamp.getTime()) {
+      setDatePickerOpen(false);
+      return;
+    }
+    setDateSaving(true);
+    try {
+      const updated = await dreamSessionsService.update(session.id, { timestamp: next });
+      setSession(updated);
+    } catch (e) {
+      console.warn('Failed to update dream date', e);
+    } finally {
+      setDateSaving(false);
+      setDatePickerOpen(false);
+    }
   }
 
   const tabProps: TabProps = {
@@ -630,7 +728,25 @@ export default function DreamDetailScreen() {
           <View style={styles.headerText}>
             <Text style={styles.title}>Sueño</Text>
             <View style={styles.headerMeta}>
-              <Text style={styles.dateText}>{formatDate(session.timestamp)}</Text>
+              {editing && NATIVE_DATE_PICKER ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cambiar fecha del sueño"
+                  onPress={openDreamDatePicker}
+                  style={({ pressed }) => [styles.datePressable, pressed && { opacity: 0.75 }]}
+                >
+                  <Ionicons name="calendar-outline" size={14} color={colors.accent} />
+                  <Text style={styles.dateTextEditable}>{formatDate(effectiveDreamDate(session))}</Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.accent} />
+                </Pressable>
+              ) : (
+                <>
+                  <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                  <Text style={styles.dateText}>{formatDate(effectiveDreamDate(session))}</Text>
+                </>
+              )}
+              <View style={styles.metaDot} />
+              <Ionicons name="ellipse" size={8} color={STATUS_COLOR[statusKey]} />
               <Text style={[styles.statusBadge, { color: STATUS_COLOR[statusKey] }]}>
                 {STATUS_LABEL[statusKey]}
               </Text>
@@ -650,6 +766,11 @@ export default function DreamDetailScreen() {
                 onPress={() => setActiveTab(tab)}
                 style={[styles.tabItem, active && styles.tabItemActive]}
               >
+                <Ionicons
+                  name={TAB_ICON[tab]}
+                  size={14}
+                  color={active ? colors.textInverse : colors.textMuted}
+                />
                 <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
                   {TAB_LABEL[tab]}
                 </Text>
@@ -662,7 +783,59 @@ export default function DreamDetailScreen() {
         <View style={styles.contentArea}>
           {renderTabContent()}
         </View>
+
+        {datePickerOpen && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={pendingDate}
+            mode="date"
+            display="default"
+            onChange={(event, date) => {
+              setDatePickerOpen(false);
+              if (event.type === 'set' && date) {
+                void commitDreamDate(date);
+              }
+            }}
+          />
+        )}
       </View>
+
+      <RNModal
+        visible={datePickerOpen && Platform.OS === 'ios'}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDatePickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.modalBackdrop} onPress={() => !dateSaving && setDatePickerOpen(false)} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name="calendar" size={22} color={colors.accent} />
+              <Text style={styles.modalTitle}>Fecha del sueño</Text>
+            </View>
+            <DateTimePicker
+              value={pendingDate}
+              mode="date"
+              display="spinner"
+              themeVariant="dark"
+              onChange={(_, date) => {
+                if (date) setPendingDate(date);
+              }}
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => !dateSaving && setDatePickerOpen(false)} hitSlop={8}>
+                <Text style={styles.modalCancel}>Cancelar</Text>
+              </Pressable>
+              <Button
+                variant="purple"
+                onPress={() => void commitDreamDate(pendingDate)}
+                disabled={dateSaving}
+              >
+                {dateSaving ? 'Guardando…' : 'Guardar fecha'}
+              </Button>
+            </View>
+          </View>
+        </View>
+      </RNModal>
     </LinearGradient>
   );
 }
@@ -698,6 +871,22 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
   },
+  datePressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateTextEditable: {
+    fontSize: typography.sizes.sm,
+    color: colors.accent,
+    fontWeight: typography.weights.medium,
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.textMuted,
+  },
   statusBadge: {
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semibold,
@@ -714,8 +903,11 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 4,
     paddingVertical: spacing.sm,
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radius.sm,
   },
   tabItemActive: {
@@ -779,6 +971,23 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
   },
+  tabHintAccent: {
+    fontSize: typography.sizes.sm,
+    color: colors.accent,
+    fontStyle: 'italic',
+  },
+  emptyHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
   dreamText: {
     fontSize: typography.sizes.lg,
     color: colors.text,
@@ -797,6 +1006,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flex: 1,
   },
   addEventBtn: {
     padding: spacing.xs,
@@ -822,6 +1032,11 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
   },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   modalTitle: {
     color: colors.text,
     fontSize: typography.sizes.lg,
@@ -840,6 +1055,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   fieldLabel: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
@@ -855,6 +1075,11 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.lg,
     color: colors.textSecondary,
     marginBottom: spacing.md,
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   linkText: {
     fontSize: typography.sizes.md,

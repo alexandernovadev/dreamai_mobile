@@ -255,7 +255,12 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
     return (
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={s.dreamText}>{text || 'Sin texto'}</Text>
-        {totalEntities === 0 && <Text style={s.hint}>Aún no se han etiquetado entidades.</Text>}
+        {totalEntities === 0 && (
+          <View style={s.hintRow}>
+            <Ionicons name="pricetags-outline" size={18} color={colors.textMuted} />
+            <Text style={s.hint}>Aún no se han etiquetado entidades.</Text>
+          </View>
+        )}
         <EntityList type="character" items={characters} />
         <EntityList type="location" items={locations} />
         <EntityList type="object" items={objects} />
@@ -422,6 +427,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
             (formType === 'feeling' ? fFeelingKind === 'UNKNOWN' : !fName.trim()) && s.saveBtnDisabled,
           ]}
         >
+          <Ionicons name="add-circle-outline" size={18} color={colors.textInverse} />
           <Text style={s.saveBtnLabel}>Agregar</Text>
         </Pressable>
       </Modal>
@@ -433,14 +439,18 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
         title="Eliminar todos"
         closeLabel="Cancelar"
       >
-        <Text style={s.clearMessage}>
-          ¿Estás seguro de eliminar todos los {clearTarget ? CLEAR_LABELS[clearTarget] : ''}?
-        </Text>
+        <View style={s.clearBody}>
+          <Ionicons name="warning-outline" size={36} color={colors.danger} />
+          <Text style={s.clearMessage}>
+            ¿Estás seguro de eliminar todos los {clearTarget ? CLEAR_LABELS[clearTarget] : ''}?
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           onPress={confirmClearAll}
           style={({ pressed }) => [s.clearConfirmBtn, pressed && { opacity: 0.85 }]}
         >
+          <Ionicons name="trash" size={18} color={colors.text} />
           <Text style={s.clearConfirmLabel}>Sí, eliminar todos</Text>
         </Pressable>
       </Modal>
@@ -570,6 +580,7 @@ const s = StyleSheet.create({
 
   dreamText: { fontSize: typography.sizes.xl, color: colors.text, lineHeight: 32 },
   hint: { fontSize: typography.sizes.sm, color: colors.textMuted, fontStyle: 'italic' },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
 
   textBox: {
     // no background/border — same feel as Draft
@@ -674,10 +685,13 @@ const s = StyleSheet.create({
 
   // Save
   saveBtn: {
+    flexDirection: 'row',
+    gap: spacing.xs,
     backgroundColor: colors.accent,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.sm,
   },
   saveBtnPressed: { opacity: 0.85 },
@@ -693,6 +707,10 @@ const s = StyleSheet.create({
     marginLeft: 'auto',
     padding: spacing.xs,
   },
+  clearBody: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
   clearMessage: {
     fontSize: typography.sizes.md,
     color: colors.textSecondary,
@@ -700,10 +718,13 @@ const s = StyleSheet.create({
     lineHeight: 22,
   },
   clearConfirmBtn: {
+    flexDirection: 'row',
+    gap: spacing.xs,
     backgroundColor: colors.danger,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   clearConfirmLabel: {
     color: colors.text,

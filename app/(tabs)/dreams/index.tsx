@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip, type ChipVariant } from '@/components/ui/Chip';
 import { Modal } from '@/components/ui/Modal';
 import { dreamSessionsService } from '@/services';
+import { effectiveDreamDate } from '@/lib/dreamDate';
 import { DreamSessionStatus, DreamKind, type DreamSession } from '@/lib/docs/types/dream';
 
 const STATUS_LABEL: Record<DreamSessionStatus, string> = {
@@ -32,6 +33,13 @@ const STATUS_CHIP: Record<DreamSessionStatus, ChipVariant> = {
   REFINING: 'yellow',
   STRUCTURED: 'blue',
   REFLECTIONS_DONE: 'green',
+};
+
+const STATUS_ICON: Record<DreamSessionStatus, keyof typeof Ionicons.glyphMap> = {
+  DRAFT: 'document-text-outline',
+  REFINING: 'color-wand-outline',
+  STRUCTURED: 'grid-outline',
+  REFLECTIONS_DONE: 'checkmark-circle-outline',
 };
 
 function formatDate(d: Date): string {
@@ -130,8 +138,11 @@ export default function DreamsListScreen() {
       <View style={styles.card}>
         <View style={styles.cardBody}>
           <View style={styles.cardTop}>
-            <Text style={styles.cardDate}>{formatDate(item.timestamp)}</Text>
-            <Chip label={STATUS_LABEL[statusKey]} variant={STATUS_CHIP[statusKey]} />
+            <View style={styles.cardDateRow}>
+              <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+              <Text style={styles.cardDate}>{formatDate(effectiveDreamDate(item))}</Text>
+            </View>
+            <Chip label={STATUS_LABEL[statusKey]} variant={STATUS_CHIP[statusKey]} icon={STATUS_ICON[statusKey]} />
           </View>
           <Text style={styles.cardPreview} numberOfLines={2}>
             {previewText(item)}
@@ -182,7 +193,10 @@ export default function DreamsListScreen() {
     >
       <View style={[styles.safe, { paddingTop: insets.top }]}>
         <Text style={styles.title}>Sueños</Text>
-        <Text style={styles.subtitle}>Tu diario onírico</Text>
+        <View style={styles.subtitleRow}>
+          <Ionicons name="moon" size={14} color={colors.textMuted} />
+          <Text style={styles.subtitle}>Tu diario onírico</Text>
+        </View>
 
         {loading ? (
           <View style={styles.center}>
@@ -259,11 +273,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: spacing.md,
   },
-  subtitle: {
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  subtitle: {
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
-    marginBottom: spacing.lg,
   },
   center: {
     flex: 1,
@@ -289,6 +308,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xs,
+  },
+  cardDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   cardDate: {
     fontSize: typography.sizes.sm,
