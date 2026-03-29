@@ -91,11 +91,11 @@ export interface DreamSession {
   timestamp: Date;
   status: DreamSessionStatus;
   /**
-   * Registro principal de la noche: pesadilla, normal, fantasía, etc.
-   * En `Draft` y `Refining` usar `Unknown` hasta el cierre estructural (`Structured`),
+   * Clasificaciones de la noche: pesadilla, lúcido, etc. Permite más de una.
+   * En `Draft` y `Refining` usar `[Unknown]` hasta el cierre estructural (`Structured`),
    * donde el usuario confirma o cambia la clasificación.
    */
-  dreamKind: DreamKind;
+  dreamKind: DreamKind | DreamKind[];
   /**
    * Primer volcado de texto antes de segmentar (paso 1).
    * Opcional si ya pasaste todo a `dreams[].rawText`.

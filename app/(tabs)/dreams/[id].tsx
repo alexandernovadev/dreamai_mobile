@@ -230,16 +230,21 @@ function TabRefiningWrapper(props: TabProps) {
 }
 
 const DREAM_KIND_OPTIONS = [
-  { value: 'NIGHTMARE', label: 'Pesadilla' },
-  { value: 'ORDINARY', label: 'Ordinario' },
-  { value: 'FANTASY', label: 'Fantasía' },
-  { value: 'LUCID', label: 'Lúcido' },
-  { value: 'ANXIOUS', label: 'Ansioso' },
-  { value: 'SURREAL', label: 'Surrealista' },
-  { value: 'RECURRENT', label: 'Recurrente' },
-  { value: 'MIXED', label: 'Mixto' },
-  { value: 'UNKNOWN', label: 'Sin clasificar' },
-];
+  { value: 'NIGHTMARE', label: 'Pesadilla', icon: 'skull-outline' },
+  { value: 'ORDINARY', label: 'Ordinario', icon: 'bed-outline' },
+  { value: 'FANTASY', label: 'Fantasía', icon: 'sparkles-outline' },
+  { value: 'LUCID', label: 'Lúcido', icon: 'eye-outline' },
+  { value: 'ANXIOUS', label: 'Ansioso', icon: 'alert-circle-outline' },
+  { value: 'SURREAL', label: 'Surrealista', icon: 'color-palette-outline' },
+  { value: 'RECURRENT', label: 'Recurrente', icon: 'repeat-outline' },
+  { value: 'MIXED', label: 'Mixto', icon: 'shuffle-outline' },
+  { value: 'UNKNOWN', label: 'Sin clasificar', icon: 'help-circle-outline' },
+] as const;
+
+function normalizeDreamKinds(dk: DreamKind | DreamKind[] | undefined): DreamKind[] {
+  if (!dk) return [DreamKind.Unknown];
+  return Array.isArray(dk) ? dk : [dk];
+}
 
 const PERSPECTIVE_OPTIONS = [
   { value: 'ACTOR', label: 'Actor (primera persona)' },
@@ -258,7 +263,9 @@ const LUCIDITY_LABELS = [
 function TabStructured({ session, editing, onSessionChange }: TabProps) {
   const analysis = session.dreams?.[0]?.analysis;
 
-  const [dreamKind, setDreamKind] = useState(session.dreamKind ?? DreamKind.Unknown);
+  const [dreamKinds, setDreamKinds] = useState<DreamKind[]>(() =>
+    normalizeDreamKinds(session.dreamKind),
+  );
   const [perspective, setPerspective] = useState<string>(
     analysis?.perspective ?? Perspective.Actor,
   );
@@ -293,7 +300,18 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
     return () => { cancelled = true; };
   }, []);
 
-  const kindLabel = DREAM_KIND_OPTIONS.find((o) => o.value === dreamKind)?.label ?? dreamKind;
+  function toggleKind(value: DreamKind) {
+    setDreamKinds((prev) => {
+      const has = prev.includes(value);
+      if (has && prev.length === 1) return prev;
+      return has ? prev.filter((k) => k !== value) : [...prev.filter((k) => k !== DreamKind.Unknown), value];
+    });
+    setSaved(false);
+  }
+
+  const kindLabels = dreamKinds
+    .map((k) => DREAM_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k)
+    .join(', ');
   const perspLabel = PERSPECTIVE_OPTIONS.find((o) => o.value === perspective)?.label ?? perspective;
 
   function toggleEvent(id: string) {
@@ -343,7 +361,7 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
 
       const updated = await dreamSessionsService.update(session.id, {
         status: DreamSessionStatus.Structured,
-        dreamKind: dreamKind as DreamKind,
+        dreamKind: dreamKinds,
         relatedLifeEventIds: selectedEventIds.length > 0 ? selectedEventIds : undefined,
         dreams: seg
           ? [{ ...seg, analysis: updatedAnalysis }]
@@ -371,7 +389,7 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
             <Ionicons name="cloudy-night-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.fieldLabel}>Tipo de sueño</Text>
           </View>
-          <Text style={styles.fieldValue}>{kindLabel}</Text>
+          <Text style={styles.fieldValue}>{kindLabels}</Text>
         </View>
         <View style={styles.fieldRow}>
           <View style={styles.fieldLabelRow}>
@@ -408,13 +426,35 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
 
   return (
     <ScrollView contentContainerStyle={styles.tabScrollContent} showsVerticalScrollIndicator={false}>
-      <Select
-        label="Tipo de sueño"
-        options={DREAM_KIND_OPTIONS}
-        value={dreamKind}
-        onValueChange={(v) => { setDreamKind(v as DreamKind); setSaved(false); }}
-        modalTitle="Tipo de sueño"
-      />
+      <View style={styles.fieldRow}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="cloudy-night-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.fieldLabel}>Tipo de sueño</Text>
+        </View>
+        <View style={styles.kindChipWrap}>
+          {DREAM_KIND_OPTIONS.filter((o) => o.value !== 'UNKNOWN').map((opt) => {
+            const selected = dreamKinds.includes(opt.value as DreamKind);
+            return (
+              <Pressable
+                key={opt.value}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                onPress={() => toggleKind(opt.value as DreamKind)}
+                style={[styles.kindChip, selected && styles.kindChipSelected]}
+              >
+                <Ionicons
+                  name={opt.icon as any}
+                  size={14}
+                  color={selected ? colors.accent : colors.textMuted}
+                />
+                <Text style={[styles.kindChipLabel, selected && styles.kindChipLabelSelected]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       <Select
         label="Perspectiva"
@@ -772,7 +812,10 @@ function ReadTabSignal({ session }: { session: DreamSession }) {
 
 function ReadTabDetail({ session }: { session: DreamSession }) {
   const analysis = session.dreams?.[0]?.analysis;
-  const kindLabel = DREAM_KIND_OPTIONS.find((o) => o.value === session.dreamKind)?.label ?? session.dreamKind ?? 'Sin clasificar';
+  const kinds = normalizeDreamKinds(session.dreamKind);
+  const kindLabel = kinds
+    .map((k) => DREAM_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k)
+    .join(', ') || 'Sin clasificar';
   const perspLabel = PERSPECTIVE_OPTIONS.find((o) => o.value === analysis?.perspective)?.label ?? 'Sin definir';
   const lucidity = lucidityLevelFromAnalysis(analysis);
   const reflection = session.userThought ?? '';
@@ -1345,6 +1388,35 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.xs,
+  },
+  kindChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  kindChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surfaceMuted,
+  },
+  kindChipSelected: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(124, 92, 196, 0.18)',
+  },
+  kindChipLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    fontWeight: typography.weights.medium,
+  },
+  kindChipLabelSelected: {
+    color: colors.text,
+    fontWeight: typography.weights.semibold,
   },
   eventLabelRow: {
     flexDirection: 'row',

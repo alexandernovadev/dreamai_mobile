@@ -108,7 +108,7 @@ export default function DreamsListScreen() {
       const created = await dreamSessionsService.create({
         timestamp: new Date(),
         status: DreamSessionStatus.Draft,
-        dreamKind: DreamKind.Unknown,
+        dreamKind: [DreamKind.Unknown],
         rawNarrative: '',
         dreams: [{ id: `seg-${Date.now()}`, order: 0, rawText: '' }],
       });

@@ -13,6 +13,9 @@ function strip(s: Partial<DreamSession>): Record<string, unknown> {
   if (s.timestamp) {
     out.timestamp = s.timestamp.toISOString();
   }
+  if (Array.isArray(s.dreamKind)) {
+    out.dreamKind = s.dreamKind.length === 1 ? s.dreamKind[0] : 'MIXED';
+  }
   return out;
 }
 

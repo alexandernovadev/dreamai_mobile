@@ -122,6 +122,9 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
   const [selectedFeelingKinds, setSelectedFeelingKinds] = useState<Set<FeelingKind>>(() => new Set());
   const [fNotes, setFNotes] = useState('');
 
+  // Edit mode: if set, we're editing an existing entity instead of creating
+  const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
+
   // Action state
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -156,6 +159,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
 
   function pickType(type: EntityType) {
     setTypePickerOpen(false);
+    setEditingEntityId(null);
     setFormType(type);
     setFName(selectedQuote);
     setFDesc('');
@@ -183,40 +187,79 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
   }
 
   function saveEntity() {
-    const id = `e-${Date.now()}`;
+    const isEditing = editingEntityId !== null;
+    const id = isEditing ? editingEntityId : `e-${Date.now()}`;
+
     switch (formType) {
-      case 'character':
-        setCharacters((p) => [
-          ...p,
-          { id, name: fName, description: fDesc, isKnown: fIsKnown, archetype: fArchetype as Archetype },
-        ]);
+      case 'character': {
+        const entry = { id, name: fName, description: fDesc, isKnown: fIsKnown, archetype: fArchetype as Archetype };
+        setCharacters((p) => isEditing ? p.map((x) => (x.id === id ? entry : x)) : [...p, entry]);
         break;
-      case 'location':
-        setLocations((p) => [
-          ...p,
-          { id, name: fName, description: fDesc, isFamiliar: fIsFamiliar, setting: fSetting as LocationSetting },
-        ]);
+      }
+      case 'location': {
+        const entry = { id, name: fName, description: fDesc, isFamiliar: fIsFamiliar, setting: fSetting as LocationSetting };
+        setLocations((p) => isEditing ? p.map((x) => (x.id === id ? entry : x)) : [...p, entry]);
         break;
-      case 'object':
-        setObjects((p) => [...p, { id, name: fName, description: fDesc }]);
+      }
+      case 'object': {
+        const entry = { id, name: fName, description: fDesc };
+        setObjects((p) => isEditing ? p.map((x) => (x.id === id ? entry : x)) : [...p, entry]);
         break;
+      }
       case 'feeling': {
-        const kinds = Array.from(selectedFeelingKinds);
-        if (kinds.length === 0) return;
-        if (kinds.length === 1 && kinds[0] === FeelingKind.Unknown) return;
-        const base = Date.now();
-        setFeelings((p) => [
-          ...p,
-          ...kinds.map((kind, i) => ({
-            id: `e-${base}-${i}-${Math.random().toString(36).slice(2, 9)}`,
-            kind,
-            notes: fNotes.trim() || undefined,
-          })),
-        ]);
+        if (isEditing) {
+          const kind = Array.from(selectedFeelingKinds)[0];
+          if (!kind) return;
+          setFeelings((p) => p.map((x) => (x.id === id ? { ...x, kind, notes: fNotes.trim() || undefined } : x)));
+        } else {
+          const kinds = Array.from(selectedFeelingKinds);
+          if (kinds.length === 0) return;
+          if (kinds.length === 1 && kinds[0] === FeelingKind.Unknown) return;
+          const base = Date.now();
+          setFeelings((p) => [
+            ...p,
+            ...kinds.map((kind, i) => ({
+              id: `e-${base}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+              kind,
+              notes: fNotes.trim() || undefined,
+            })),
+          ]);
+        }
         break;
       }
     }
+    setEditingEntityId(null);
     setFormType(null);
+  }
+
+  function editEntity(type: EntityType, id: string) {
+    setEditingEntityId(id);
+    setFormType(type);
+    if (type === 'character') {
+      const c = characters.find((x) => x.id === id);
+      if (!c) return;
+      setFName(c.name);
+      setFDesc(c.description ?? '');
+      setFIsKnown(c.isKnown);
+      setFArchetype(c.archetype ?? 'UNKNOWN');
+    } else if (type === 'location') {
+      const l = locations.find((x) => x.id === id);
+      if (!l) return;
+      setFName(l.name);
+      setFDesc(l.description ?? '');
+      setFIsFamiliar(l.isFamiliar);
+      setFSetting(l.setting ?? 'ABSTRACT');
+    } else if (type === 'object') {
+      const o = objects.find((x) => x.id === id);
+      if (!o) return;
+      setFName(o.name);
+      setFDesc(o.description ?? '');
+    } else if (type === 'feeling') {
+      const f = feelings.find((x) => x.id === id);
+      if (!f) return;
+      setSelectedFeelingKinds(new Set([f.kind]));
+      setFNotes(f.notes ?? '');
+    }
   }
 
   function removeEntity(type: EntityType, id: string) {
@@ -331,10 +374,10 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
       <View style={s.stickyFooter}>
         {totalEntities > 0 && (
           <ScrollView style={s.entityScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            <EntityList type="character" items={characters} onRemove={(id) => removeEntity('character', id)} onRemoveAll={() => setClearTarget('character')} />
-            <EntityList type="location" items={locations} onRemove={(id) => removeEntity('location', id)} onRemoveAll={() => setClearTarget('location')} />
-            <EntityList type="object" items={objects} onRemove={(id) => removeEntity('object', id)} onRemoveAll={() => setClearTarget('object')} />
-            <FeelingList items={feelings} onRemove={(id) => removeEntity('feeling', id)} onRemoveAll={() => setClearTarget('feeling')} />
+            <EntityList type="character" items={characters} onRemove={(id) => removeEntity('character', id)} onRemoveAll={() => setClearTarget('character')} onEdit={(id) => editEntity('character', id)} />
+            <EntityList type="location" items={locations} onRemove={(id) => removeEntity('location', id)} onRemoveAll={() => setClearTarget('location')} onEdit={(id) => editEntity('location', id)} />
+            <EntityList type="object" items={objects} onRemove={(id) => removeEntity('object', id)} onRemoveAll={() => setClearTarget('object')} onEdit={(id) => editEntity('object', id)} />
+            <FeelingList items={feelings} onRemove={(id) => removeEntity('feeling', id)} onRemoveAll={() => setClearTarget('feeling')} onEdit={(id) => editEntity('feeling', id)} />
           </ScrollView>
         )}
         {hasSelection && (
@@ -404,22 +447,31 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
       {/* ── Entity form modal ── */}
       <Modal
         visible={formType !== null}
-        onClose={() => setFormType(null)}
+        onClose={() => { setFormType(null); setEditingEntityId(null); }}
         title={
-          formType === 'character'
+          (editingEntityId ? 'Editar ' : '') +
+          (formType === 'character'
             ? 'Personaje'
             : formType === 'location'
               ? 'Lugar'
               : formType === 'object'
                 ? 'Objeto'
-                : 'Emociones'
+                : editingEntityId ? 'Emoción' : 'Emociones')
         }
         closeLabel="Cancelar"
       >
         {(formType === 'character' || formType === 'location' || formType === 'object') && (
           <>
             <Input label="Nombre" value={fName} onChangeText={setFName} placeholder="Nombre" />
-            <Input label="Descripción" value={fDesc} onChangeText={setFDesc} placeholder="Opcional" />
+            <Input
+              label="Descripción"
+              value={fDesc}
+              onChangeText={setFDesc}
+              placeholder="Opcional"
+              multiline
+              numberOfLines={3}
+              inputStyle={s.descTextarea}
+            />
           </>
         )}
         {formType === 'character' && (
@@ -449,7 +501,9 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
         {formType === 'feeling' && (
           <>
             <Text style={s.feelingMultiHint}>
-              Elige una o varias. Se creará una entrada por cada tipo (mismas notas opcionales).
+              {editingEntityId
+                ? 'Cambia el tipo de emoción.'
+                : 'Elige una o varias. Se creará una entrada por cada tipo (mismas notas opcionales).'}
             </Text>
             <ScrollView
               style={s.feelingChipScroll}
@@ -496,9 +550,13 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
             (formType === 'feeling' ? !isFeelingFormValid() : !fName.trim()) && s.saveBtnDisabled,
           ]}
         >
-          <Ionicons name="add-circle-outline" size={18} color={colors.textInverse} />
+          <Ionicons name={editingEntityId ? 'checkmark-circle-outline' : 'add-circle-outline'} size={18} color={colors.textInverse} />
           <Text style={s.saveBtnLabel}>
-            {formType === 'feeling' ? 'Agregar emociones' : 'Agregar'}
+            {editingEntityId
+              ? 'Guardar'
+              : formType === 'feeling'
+                ? 'Agregar emociones'
+                : 'Agregar'}
           </Text>
         </Pressable>
       </Modal>
@@ -536,11 +594,13 @@ function EntityList({
   items,
   onRemove,
   onRemoveAll,
+  onEdit,
 }: {
   type: EntityType;
   items: { id: string; name: string; description?: string }[];
   onRemove?: (id: string) => void;
   onRemoveAll?: () => void;
+  onEdit?: (id: string) => void;
 }) {
   if (items.length === 0) return null;
   const meta = ENTITY_TYPE_OPTIONS.find((o) => o.type === type)!;
@@ -564,7 +624,12 @@ function EntityList({
         )}
       </View>
       {items.map((item) => (
-        <View key={item.id} style={s.entityRow}>
+        <Pressable
+          key={item.id}
+          style={({ pressed }) => [s.entityRow, pressed && { opacity: 0.7 }]}
+          onPress={() => onEdit?.(item.id)}
+          disabled={!onEdit}
+        >
           <View style={[s.entityDot, { backgroundColor: ENTITY_COLORS[type] }]} />
           <View style={s.entityInfo}>
             <Text style={s.entityName}>{item.name}</Text>
@@ -572,6 +637,9 @@ function EntityList({
               <Text style={s.entityDesc} numberOfLines={1}>{item.description}</Text>
             ) : null}
           </View>
+          {onEdit && (
+            <Ionicons name="create-outline" size={16} color={colors.textMuted} style={{ marginRight: spacing.xs }} />
+          )}
           {onRemove && (
             <Pressable
               accessibilityRole="button"
@@ -583,7 +651,7 @@ function EntityList({
               <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </Pressable>
           )}
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -593,10 +661,12 @@ function FeelingList({
   items,
   onRemove,
   onRemoveAll,
+  onEdit,
 }: {
   items: Feeling[];
   onRemove?: (id: string) => void;
   onRemoveAll?: () => void;
+  onEdit?: (id: string) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -619,7 +689,12 @@ function FeelingList({
         )}
       </View>
       {items.map((item) => (
-        <View key={item.id} style={s.entityRow}>
+        <Pressable
+          key={item.id}
+          style={({ pressed }) => [s.entityRow, pressed && { opacity: 0.7 }]}
+          onPress={() => onEdit?.(item.id)}
+          disabled={!onEdit}
+        >
           <View style={[s.entityDot, { backgroundColor: ENTITY_COLORS.feeling }]} />
           <View style={s.entityInfo}>
             <Text style={s.entityName}>{FEELING_LABEL_ES[item.kind] ?? item.kind}</Text>
@@ -627,6 +702,9 @@ function FeelingList({
               <Text style={s.entityDesc} numberOfLines={1}>{item.notes}</Text>
             ) : null}
           </View>
+          {onEdit && (
+            <Ionicons name="create-outline" size={16} color={colors.textMuted} style={{ marginRight: spacing.xs }} />
+          )}
           {onRemove && (
             <Pressable
               accessibilityRole="button"
@@ -638,7 +716,7 @@ function FeelingList({
               <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </Pressable>
           )}
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -753,6 +831,12 @@ const s = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.text,
     fontWeight: typography.weights.medium,
+  },
+
+  descTextarea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+    paddingTop: spacing.md,
   },
 
   feelingMultiHint: {
