@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import {
   badgeGradients,
   badgeShineGradient,
@@ -14,6 +20,19 @@ const SIZES = {
   md: 72,
   lg: 88,
 } as const;
+
+const badgeOuterShadow: ViewStyle = Platform.select<ViewStyle>({
+  web: {
+    boxShadow: '0px 2px 8px rgba(255, 200, 96, 0.45)',
+  },
+  default: {
+    shadowColor: '#ffc860',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+}) ?? {};
 
 export type BadgeProps = {
   variant: BadgeVariant;
@@ -32,6 +51,7 @@ export function Badge({ variant, size = 'md', children, style }: BadgeProps) {
     <View
       style={[
         styles.outer,
+        badgeOuterShadow,
         { width: dim, height: dim, borderRadius: r },
         style,
       ]}
@@ -62,11 +82,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'rgba(255, 210, 130, 0.75)',
-    shadowColor: '#ffc860',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 6,
   },
   fill: {
     ...StyleSheet.absoluteFillObject,

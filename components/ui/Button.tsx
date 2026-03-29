@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -25,6 +26,20 @@ import {
 } from '@/theme';
 
 const darkLabelSet = new Set<ButtonGradientVariant>([...buttonDarkLabelVariants]);
+
+/** Web deprecates shadow*; native keeps iOS/Android shadows. */
+const glowOuterElevation: ViewStyle = Platform.select<ViewStyle>({
+  web: {
+    boxShadow: '0 0 8px rgba(61, 40, 104, 0.35)',
+  },
+  default: {
+    shadowColor: colors.buttonGlow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+}) ?? {};
 
 const SPRING = { damping: 20, stiffness: 420, mass: 0.28 } as const;
 const PRESSED_SCALE = 0.98;
@@ -82,7 +97,7 @@ export function Button({
       {...pressableProps}
       style={[disabled && styles.disabled, style]}
     >
-      <Animated.View style={[styles.glowOuter, animatedStyle]}>
+      <Animated.View style={[styles.glowOuter, glowOuterElevation, animatedStyle]}>
         <View style={styles.innerBorder}>
           <LinearGradient
             colors={[...g.colors]}
@@ -108,11 +123,6 @@ export function Button({
 const styles = StyleSheet.create({
   glowOuter: {
     borderRadius: radius.lg,
-    shadowColor: colors.buttonGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
   },
   innerBorder: {
     borderRadius: radius.lg,
