@@ -246,7 +246,10 @@ export default function DreamsListScreen() {
           onPress={handleCreate}
           style={({ pressed }) => [
             styles.fab,
-            { bottom: insets.bottom + spacing.lg },
+            {
+              bottom: insets.bottom + spacing.lg,
+              right: spacing.xl + insets.right,
+            },
             pressed && styles.fabPressed,
           ]}
         >
@@ -364,7 +367,6 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    right: 0,
     width: 56,
     height: 56,
     borderRadius: 28,
