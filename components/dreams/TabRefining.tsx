@@ -20,6 +20,7 @@ import { dreamSessionsService, aiService } from '@/services';
 import {
   DreamSessionStatus,
   Perspective,
+  lucidityLevelFromAnalysis,
   type DreamSession,
   type DreamSegmentAnalysis,
 } from '@/lib/docs/types/dream';
@@ -51,10 +52,25 @@ const SETTING_OPTIONS = [
   { value: 'ABSTRACT', label: 'Abstracto' },
 ];
 
-const FEELING_OPTIONS = Object.values(FeelingKind).map((v) => ({
-  value: v,
-  label: v.charAt(0) + v.slice(1).toLowerCase(),
-}));
+const FEELING_LABEL_ES: Record<FeelingKind, string> = {
+  [FeelingKind.Fear]: 'Miedo',
+  [FeelingKind.Anxiety]: 'Ansiedad',
+  [FeelingKind.Joy]: 'Alegría',
+  [FeelingKind.Peace]: 'Paz',
+  [FeelingKind.Sadness]: 'Tristeza',
+  [FeelingKind.Anger]: 'Ira',
+  [FeelingKind.Shame]: 'Vergüenza',
+  [FeelingKind.Guilt]: 'Culpa',
+  [FeelingKind.Confusion]: 'Confusión',
+  [FeelingKind.Longing]: 'Nostalgia',
+  [FeelingKind.Awe]: 'Asombro',
+  [FeelingKind.Disgust]: 'Asco',
+  [FeelingKind.Neutral]: 'Neutral',
+  [FeelingKind.Mixed]: 'Mixto',
+  [FeelingKind.Unknown]: 'Desconocido',
+};
+
+const FEELING_KINDS_ORDER = Object.values(FeelingKind);
 
 type EntityType = 'character' | 'location' | 'object' | 'feeling';
 
@@ -101,7 +117,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
   const [fArchetype, setFArchetype] = useState('UNKNOWN');
   const [fIsFamiliar, setFIsFamiliar] = useState(false);
   const [fSetting, setFSetting] = useState('ABSTRACT');
-  const [fFeelingKind, setFFeelingKind] = useState('UNKNOWN');
+  const [selectedFeelingKinds, setSelectedFeelingKinds] = useState<Set<FeelingKind>>(() => new Set());
   const [fNotes, setFNotes] = useState('');
 
   // Action state
@@ -145,8 +161,23 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
     setFArchetype('UNKNOWN');
     setFIsFamiliar(false);
     setFSetting('ABSTRACT');
-    setFFeelingKind('UNKNOWN');
+    setSelectedFeelingKinds(new Set());
     setFNotes('');
+  }
+
+  function toggleFeelingKind(kind: FeelingKind) {
+    setSelectedFeelingKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
+  }
+
+  function isFeelingFormValid(): boolean {
+    if (selectedFeelingKinds.size === 0) return false;
+    if (selectedFeelingKinds.size === 1 && selectedFeelingKinds.has(FeelingKind.Unknown)) return false;
+    return true;
   }
 
   function saveEntity() {
@@ -167,12 +198,21 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
       case 'object':
         setObjects((p) => [...p, { id, name: fName, description: fDesc }]);
         break;
-      case 'feeling':
+      case 'feeling': {
+        const kinds = Array.from(selectedFeelingKinds);
+        if (kinds.length === 0) return;
+        if (kinds.length === 1 && kinds[0] === FeelingKind.Unknown) return;
+        const base = Date.now();
         setFeelings((p) => [
           ...p,
-          { id, kind: fFeelingKind as FeelingKind, notes: fNotes || undefined },
+          ...kinds.map((kind, i) => ({
+            id: `e-${base}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+            kind,
+            notes: fNotes.trim() || undefined,
+          })),
         ]);
         break;
+      }
     }
     setFormType(null);
   }
@@ -234,7 +274,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
       const updatedAnalysis: DreamSegmentAnalysis = {
         perspective: analysis?.perspective ?? Perspective.Actor,
         entities: { characters, locations, objects, feelings },
-        isLucid: analysis?.isLucid ?? false,
+        lucidityLevel: lucidityLevelFromAnalysis(analysis),
       };
       const updated = await dreamSessionsService.update(session.id, {
         status: DreamSessionStatus.Refining,
@@ -369,7 +409,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
               ? 'Lugar'
               : formType === 'object'
                 ? 'Objeto'
-                : 'Emoción'
+                : 'Emociones'
         }
         closeLabel="Cancelar"
       >
@@ -405,30 +445,58 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
         )}
         {formType === 'feeling' && (
           <>
-            <Select
-              label="Tipo de emoción"
-              options={FEELING_OPTIONS}
-              value={fFeelingKind}
-              onValueChange={setFFeelingKind}
-              modalTitle="Emoción"
-            />
-            <Input label="Notas" value={fNotes} onChangeText={setFNotes} placeholder="Opcional" />
+            <Text style={s.feelingMultiHint}>
+              Elige una o varias. Se creará una entrada por cada tipo (mismas notas opcionales).
+            </Text>
+            <ScrollView
+              style={s.feelingChipScroll}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={s.feelingChipWrap}>
+                {FEELING_KINDS_ORDER.map((kind) => {
+                  const selected = selectedFeelingKinds.has(kind);
+                  return (
+                    <Pressable
+                      key={kind}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      onPress={() => toggleFeelingKind(kind)}
+                      style={[
+                        s.feelingChip,
+                        selected && s.feelingChipSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[s.feelingChipLabel, selected && s.feelingChipLabelSelected]}
+                        numberOfLines={1}
+                      >
+                        {FEELING_LABEL_ES[kind]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            <Input label="Notas (opcional)" value={fNotes} onChangeText={setFNotes} placeholder="Aplica a todas las emociones añadidas" />
           </>
         )}
         <Pressable
           accessibilityRole="button"
           onPress={saveEntity}
           disabled={
-            formType === 'feeling' ? fFeelingKind === 'UNKNOWN' : !fName.trim()
+            formType === 'feeling' ? !isFeelingFormValid() : !fName.trim()
           }
           style={({ pressed }) => [
             s.saveBtn,
             pressed && s.saveBtnPressed,
-            (formType === 'feeling' ? fFeelingKind === 'UNKNOWN' : !fName.trim()) && s.saveBtnDisabled,
+            (formType === 'feeling' ? !isFeelingFormValid() : !fName.trim()) && s.saveBtnDisabled,
           ]}
         >
           <Ionicons name="add-circle-outline" size={18} color={colors.textInverse} />
-          <Text style={s.saveBtnLabel}>Agregar</Text>
+          <Text style={s.saveBtnLabel}>
+            {formType === 'feeling' ? 'Agregar emociones' : 'Agregar'}
+          </Text>
         </Pressable>
       </Modal>
 
@@ -551,7 +619,7 @@ function FeelingList({
         <View key={item.id} style={s.entityRow}>
           <View style={[s.entityDot, { backgroundColor: ENTITY_COLORS.feeling }]} />
           <View style={s.entityInfo}>
-            <Text style={s.entityName}>{item.kind}</Text>
+            <Text style={s.entityName}>{FEELING_LABEL_ES[item.kind] ?? item.kind}</Text>
             {item.notes ? (
               <Text style={s.entityDesc} numberOfLines={1}>{item.notes}</Text>
             ) : null}
@@ -681,6 +749,41 @@ const s = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.text,
     fontWeight: typography.weights.medium,
+  },
+
+  feelingMultiHint: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  feelingChipScroll: {
+    maxHeight: 220,
+  },
+  feelingChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  feelingChip: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.buttonBorder,
+    backgroundColor: colors.surfaceMuted,
+  },
+  feelingChipSelected: {
+    borderColor: ENTITY_COLORS.feeling,
+    backgroundColor: 'rgba(224, 96, 128, 0.18)',
+  },
+  feelingChipLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
+  },
+  feelingChipLabelSelected: {
+    color: colors.text,
+    fontWeight: typography.weights.semibold,
   },
 
   // Save

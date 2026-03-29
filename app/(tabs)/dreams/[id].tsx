@@ -26,11 +26,12 @@ import { dreamSessionsService, lifeEventsService } from '@/services';
 import { Chip } from '@/components/ui/Chip';
 import { TabRefining } from '@/components/dreams/TabRefining';
 import { Select } from '@/components/ui/Select';
-import { Switch } from '@/components/ui/Switch';
+import { Slider } from '@/components/ui/Slider';
 import {
   DreamKind,
   DreamSessionStatus,
   Perspective,
+  lucidityLevelFromAnalysis,
   type DreamSession,
   type DreamSegmentAnalysis,
 } from '@/lib/docs/types/dream';
@@ -245,6 +246,15 @@ const PERSPECTIVE_OPTIONS = [
   { value: 'OBSERVER', label: 'Observador (tercera persona)' },
 ];
 
+const LUCIDITY_LABELS = [
+  'Sin lucidez',
+  'Leve',
+  'Moderada',
+  'Clara',
+  'Muy clara',
+  'Máxima',
+] as const;
+
 function TabStructured({ session, editing, onSessionChange }: TabProps) {
   const analysis = session.dreams?.[0]?.analysis;
 
@@ -252,7 +262,9 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
   const [perspective, setPerspective] = useState<string>(
     analysis?.perspective ?? Perspective.Actor,
   );
-  const [isLucid, setIsLucid] = useState(analysis?.isLucid ?? false);
+  const [lucidityLevel, setLucidityLevel] = useState(() =>
+    lucidityLevelFromAnalysis(analysis),
+  );
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>(
     session.relatedLifeEventIds ?? [],
   );
@@ -322,11 +334,11 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
     try {
       const seg = session.dreams?.[0];
       const updatedAnalysis = seg?.analysis
-        ? { ...seg.analysis, perspective: perspective as Perspective, isLucid }
+        ? { ...seg.analysis, perspective: perspective as Perspective, lucidityLevel }
         : {
             perspective: perspective as Perspective,
             entities: { characters: [], locations: [], objects: [], feelings: [] },
-            isLucid,
+            lucidityLevel,
           };
 
       const updated = await dreamSessionsService.update(session.id, {
@@ -371,9 +383,11 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
         <View style={styles.fieldRow}>
           <View style={styles.fieldLabelRow}>
             <Ionicons name="flash-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.fieldLabel}>¿Lúcido?</Text>
+            <Text style={styles.fieldLabel}>Lucidez</Text>
           </View>
-          <Text style={styles.fieldValue}>{isLucid ? 'Sí' : 'No'}</Text>
+          <Text style={styles.fieldValue}>
+            {LUCIDITY_LABELS[lucidityLevelFromAnalysis(analysis)] ?? '—'}
+          </Text>
         </View>
         {selectedEventNames.length > 0 && (
           <View style={styles.fieldRow}>
@@ -410,10 +424,21 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
         modalTitle="Perspectiva"
       />
 
-      <Switch
-        label="¿Fue un sueño lúcido?"
-        value={isLucid}
-        onValueChange={(v) => { setIsLucid(v); setSaved(false); }}
+      <Slider
+        label="Nivel de lucidez"
+        hint="0 = sin lucidez · 5 = lucidez muy clara en el sueño."
+        value={lucidityLevel}
+        onValueChange={(v) => {
+          setLucidityLevel(Math.round(v));
+          setSaved(false);
+        }}
+        minimumValue={0}
+        maximumValue={5}
+        step={1}
+        formatValue={(v) => {
+          const n = Math.round(v);
+          return `${n} · ${LUCIDITY_LABELS[n]}`;
+        }}
       />
 
       {/* Life events */}
@@ -749,7 +774,7 @@ function ReadTabDetail({ session }: { session: DreamSession }) {
   const analysis = session.dreams?.[0]?.analysis;
   const kindLabel = DREAM_KIND_OPTIONS.find((o) => o.value === session.dreamKind)?.label ?? session.dreamKind ?? 'Sin clasificar';
   const perspLabel = PERSPECTIVE_OPTIONS.find((o) => o.value === analysis?.perspective)?.label ?? 'Sin definir';
-  const isLucid = analysis?.isLucid ?? false;
+  const lucidity = lucidityLevelFromAnalysis(analysis);
   const reflection = session.userThought ?? '';
 
   const [allEvents, setAllEvents] = useState<LifeEvent[]>([]);
@@ -801,17 +826,11 @@ function ReadTabDetail({ session }: { session: DreamSession }) {
         <View style={rs.detailRow}>
           <View style={rs.detailLabelRow}>
             <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
-            <Text style={rs.detailLabel}>Lúcido</Text>
+            <Text style={rs.detailLabel}>Lucidez</Text>
           </View>
-          <View style={rs.lucidBadge}>
-            <Ionicons
-              name={isLucid ? 'checkmark-circle' : 'close-circle'}
-              size={16}
-              color={isLucid ? colors.success : colors.textMuted}
-            />
-            <Text style={[rs.detailValue, { color: isLucid ? colors.success : colors.textMuted }]}>
-              {isLucid ? 'Sí' : 'No'}
-            </Text>
+          <View style={rs.lucidityBadge}>
+            <Text style={rs.lucidityLevelNum}>{lucidity}</Text>
+            <Text style={rs.detailValue}>{LUCIDITY_LABELS[lucidity]}</Text>
           </View>
         </View>
       </View>
@@ -1577,10 +1596,19 @@ const rs = StyleSheet.create({
     fontWeight: typography.weights.medium,
     color: colors.text,
   },
-  lucidBadge: {
+  lucidityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.sm,
+    flexShrink: 1,
+    justifyContent: 'flex-end',
+  },
+  lucidityLevelNum: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold,
+    color: colors.accent,
+    minWidth: 18,
+    textAlign: 'right',
   },
   reflectionText: {
     fontSize: typography.sizes.md,

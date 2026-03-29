@@ -54,7 +54,25 @@ export interface DreamSegmentAnalysis {
     objects: DreamObject[];
     feelings: Feeling[];
   };
-  isLucid: boolean;
+  /**
+   * Grado de lucidez (validación servidor): 0 = sin lucidez, 1–5 = intensidad.
+   * El booleano `isLucid` quedó obsoleto en la API.
+   */
+  lucidityLevel?: number;
+}
+
+/** Normaliza `lucidityLevel` 0–5; si el servidor aún envía `isLucid` legacy, se mapea a un valor aproximado. */
+export function lucidityLevelFromAnalysis(
+  analysis?: DreamSegmentAnalysis | null,
+): number {
+  if (!analysis) return 0;
+  const raw = analysis.lucidityLevel;
+  if (typeof raw === 'number' && !Number.isNaN(raw)) {
+    return Math.max(0, Math.min(5, Math.round(raw)));
+  }
+  const legacy = (analysis as { isLucid?: boolean }).isLucid;
+  if (legacy === true) return 3;
+  return 0;
 }
 
 export interface DreamSegment {
