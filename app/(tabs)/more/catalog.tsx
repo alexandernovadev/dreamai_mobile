@@ -13,6 +13,7 @@ import {
   badgeLabelStyle,
   Button,
   Checkbox,
+  Chip,
   Input,
   KeyboardAvoidingScroll,
   Modal,
@@ -27,6 +28,7 @@ import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 type CatalogTab =
   | 'buttons'
+  | 'chips'
   | 'inputs'
   | 'badges'
   | 'select'
@@ -60,6 +62,7 @@ export default function CatalogScreen() {
   const [sliderVal, setSliderVal] = useState(42);
   const [sliderFine, setSliderFine] = useState(0.35);
   const [modalOpen, setModalOpen] = useState(false);
+  const [chipSelected, setChipSelected] = useState<string | null>('purple');
 
   return (
     <LinearGradient
@@ -98,6 +101,25 @@ export default function CatalogScreen() {
                 ]}
               >
                 Botones
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === 'chips' }}
+              onPress={() => setTab('chips')}
+              style={({ pressed }) => [
+                styles.tab,
+                tab === 'chips' && styles.tabActive,
+                pressed && styles.tabPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  tab === 'chips' && styles.tabLabelActive,
+                ]}
+              >
+                Chips
               </Text>
             </Pressable>
             <Pressable
@@ -212,6 +234,59 @@ export default function CatalogScreen() {
                 <Button variant="orange">Naranja</Button>
                 <Button variant="rose">Rosa</Button>
                 <Button variant="indigo">Índigo</Button>
+              </View>
+            </View>
+          ) : tab === 'chips' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionHint}>
+                Fondo translúcido con borde sutil; ideales para tags y filtros
+              </Text>
+
+              <Text style={styles.subsectionLabel}>Variantes de color</Text>
+              <View style={styles.chipRow}>
+                <Chip label="Purple" variant="purple" icon="sparkles" />
+                <Chip label="Blue" variant="blue" icon="water" />
+                <Chip label="Green" variant="green" icon="leaf" />
+                <Chip label="Yellow" variant="yellow" icon="sunny" />
+                <Chip label="Rose" variant="rose" icon="heart" />
+                <Chip label="Teal" variant="teal" icon="globe" />
+                <Chip label="Orange" variant="orange" icon="flame" />
+                <Chip label="Neutral" variant="neutral" icon="ellipse" />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Seleccionables</Text>
+              <View style={styles.chipRow}>
+                {(['purple', 'blue', 'green', 'rose', 'teal'] as const).map((v) => (
+                  <Chip
+                    key={v}
+                    label={v.charAt(0).toUpperCase() + v.slice(1)}
+                    variant={v}
+                    selected={chipSelected === v}
+                    onPress={() => setChipSelected(chipSelected === v ? null : v)}
+                  />
+                ))}
+              </View>
+
+              <Text style={styles.subsectionLabel}>Con quitar (removable)</Text>
+              <View style={styles.chipRow}>
+                <Chip label="Personaje" variant="blue" icon="person" onRemove={() => {}} />
+                <Chip label="Lugar" variant="green" icon="location" onRemove={() => {}} />
+                <Chip label="Objeto" variant="yellow" icon="cube" onRemove={() => {}} />
+                <Chip label="Emoción" variant="rose" icon="heart" onRemove={() => {}} />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Sin icono</Text>
+              <View style={styles.chipRow}>
+                <Chip label="Lúcido" variant="purple" />
+                <Chip label="Pesadilla" variant="rose" />
+                <Chip label="Recurrente" variant="orange" />
+                <Chip label="Ordinario" variant="neutral" />
+              </View>
+
+              <Text style={styles.subsectionLabel}>Deshabilitado</Text>
+              <View style={styles.chipRow}>
+                <Chip label="Disabled" variant="purple" disabled />
+                <Chip label="Disabled" variant="blue" icon="lock-closed" disabled />
               </View>
             </View>
           ) : tab === 'inputs' ? (
@@ -556,5 +631,11 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
 });

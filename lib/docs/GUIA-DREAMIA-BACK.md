@@ -42,7 +42,7 @@ Copia `.env.example` a `.env` y rellena los valores en tu máquina o en el despl
 - Una **sesión de sueño** tiene estado (`Draft` → `Refining` → `Structured` → `ReflectionsDone`), tipo de noche (`dreamKind`), texto libre opcional, reflexión opcional salvo en el último estado, vínculos a eventos de vida, y un array **JSON** de **segmentos** (`dreams`).
 - Cada segmento puede llevar **análisis** (perspectiva, entidades, lucidez). En borrador y refinamiento el análisis puede ir incompleto; en estados “cerrados” el servidor exige forma completa según las reglas descritas más abajo.
 - **Catálogo:** entradas persistentes de personajes, lugares y objetos. Dentro del JSON de segmentos se enlazan con identificadores de catálogo; el backend mantiene listas de ids en la sesión para filtrar rápido.
-- **Eventos de vida:** registros propios; las sesiones guardan ids que deben existir en esa colección.
+- **Eventos de vida:** entidad propia en `/life-events` (tipo `LifeEvent` en `docs/types/life-event.ts`). En la sesión solo se guardan **referencias por id** en `relatedLifeEventIds`: no se incrusta el título ni la fecha del evento en el documento del sueño; el cliente debe **resolver** cada id con `GET /life-events` o el detalle si hace falta mostrar datos en pantalla.
 
 El flujo narrativo detallado está en `dream-workflow-sequence.md`; los tipos TypeScript del dominio están en `docs/types/`.
 
@@ -148,7 +148,8 @@ Misma forma con prefijo `/catalog/objects` y la subruta `.../{id}/dream-sessions
 
 | Ubicación | Contenido |
 |-----------|-----------|
-| `docs/types/` | Tipos TypeScript del dominio (segmentos, entidades, enums). |
+| `docs/README.md` | Índice de esta carpeta y tabla de `docs/types/`. |
+| `docs/types/` | Tipos TypeScript del dominio (sesión, segmentos, personajes, lugares, objetos, emociones, **eventos de vida**). |
 | `docs/dream-workflow-sequence.md` | Flujo por estados y diagrama de secuencia. |
 | `docs/ai-suggestions.md` | Endpoint `POST /ai/suggest-entities`, variables de entorno y ejemplo de uso. |
 | `README.md` (raíz) | Resumen del proyecto, scripts y enlace a licencia. |

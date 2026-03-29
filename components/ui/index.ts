@@ -1,6 +1,8 @@
 export { Badge, badgeLabelStyle } from './Badge';
 export type { BadgeProps } from './Badge';
 export { Button } from './Button';
+export { Chip } from './Chip';
+export type { ChipProps, ChipVariant } from './Chip';
 export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 export { Input } from './Input';
