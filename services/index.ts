@@ -6,6 +6,7 @@ export type { ListDreamSessionsQuery } from './dreamSessions';
 export { catalogCharacters, catalogLocations, catalogObjects } from './catalog';
 export { lifeEventsService } from './lifeEvents';
 export { aiService } from './ai';
+export { cloudinaryService } from './cloudinary';
 export type {
   AiSuggestEntitiesRequest,
   AiSuggestEntitiesResponse,

@@ -13,7 +13,7 @@ export enum Perspective {
 export enum DreamKind {
   /** Terror, amenaza fuerte, despertar angustiado. */
   Nightmare = "NIGHTMARE",
-  /** Sueño “corriente”, sin etiqueta fuerte. */
+  /** Sueño "corriente", sin etiqueta fuerte. */
   Ordinary = "ORDINARY",
   /** Mundo imaginativo, ficción, irreal encantado. */
   Fantasy = "FANTASY",
@@ -40,7 +40,7 @@ export enum DreamSessionStatus {
   Draft = "DRAFT",
   /** 2 — Refinas texto, segmentas, feelings, personajes, lugares y objetos (manual o sugerido). */
   Refining = "REFINING",
-  /** 3 — Modelo onírico “completo”: entidades y análisis listos para guardar/patrón. */
+  /** 3 — Modelo onírico "completo": entidades y análisis listos para guardar/patrón. */
   Structured = "STRUCTURED",
   /** 4 — Registraste tu pensamiento o conclusión sobre el sueño. */
   ReflectionsDone = "REFLECTIONS_DONE",
@@ -86,6 +86,11 @@ export interface DreamSegment {
   analysis?: DreamSegmentAnalysis;
 }
 
+export interface DreamImage {
+  publicId: string;
+  secureUrl: string;
+}
+
 export interface DreamSession {
   readonly id: string;
   timestamp: Date;
@@ -105,9 +110,11 @@ export interface DreamSession {
   relatedLifeEventIds?: LifeEvent['id'][];
   /** Paso 4 — qué te dejó el sueño, interpretación propia, preguntas. */
   userThought?: string;
+  /** Imágenes asociadas al sueño (subidas vía /cloudinary/upload). Máx 30. */
+  dreamImages?: DreamImage[];
   /**
    * Segmentos del relato. Puede ser `[]` en borrador hasta que el usuario añada partes;
-   * las reglas de “al menos un segmento” son de validación por `status`, no del tipo.
+   * las reglas de "al menos un segmento" son de validación por `status`, no del tipo.
    */
   dreams: DreamSegment[];
 }

@@ -4,6 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Modal as RNModal,
   Platform,
@@ -14,6 +16,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
-import { dreamSessionsService, lifeEventsService } from '@/services';
+import { dreamSessionsService, lifeEventsService, cloudinaryService } from '@/services';
 import { Chip } from '@/components/ui/Chip';
 import { TabRefining } from '@/components/dreams/TabRefining';
 import { Select } from '@/components/ui/Select';
@@ -32,6 +35,7 @@ import {
   DreamSessionStatus,
   Perspective,
   lucidityLevelFromAnalysis,
+  type DreamImage,
   type DreamSession,
   type DreamSegmentAnalysis,
 } from '@/lib/docs/types/dream';
@@ -242,8 +246,10 @@ const DREAM_KIND_OPTIONS = [
 ] as const;
 
 function normalizeDreamKinds(dk: DreamKind | DreamKind[] | undefined): DreamKind[] {
-  if (!dk) return [DreamKind.Unknown];
-  return Array.isArray(dk) ? dk : [dk];
+  if (!dk) return [DreamKind.Ordinary];
+  const arr = Array.isArray(dk) ? dk : [dk];
+  if (arr.length === 1 && arr[0] === DreamKind.Unknown) return [DreamKind.Ordinary];
+  return arr;
 }
 
 const PERSPECTIVE_OPTIONS = [
@@ -277,6 +283,10 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
   );
   const [allEvents, setAllEvents] = useState<LifeEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [images, setImages] = useState<DreamImage[]>(session.dreamImages ?? []);
+  const [uploading, setUploading] = useState(false);
+  const MAX_IMAGES = 30;
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
@@ -347,6 +357,39 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
     }
   }
 
+  async function pickImage() {
+    if (images.length >= MAX_IMAGES) {
+      Alert.alert('Límite', `Máximo ${MAX_IMAGES} imágenes por sueño.`);
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permiso', 'Se necesita acceso a la galería para subir fotos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setUploading(true);
+    try {
+      const img = await cloudinaryService.uploadImage(result.assets[0].uri);
+      setImages((prev) => [...prev, img]);
+      setSaved(false);
+    } catch (e) {
+      console.warn('Upload failed', e);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeImage(publicId: string) {
+    setImages((prev) => prev.filter((i) => i.publicId !== publicId));
+    setSaved(false);
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -362,6 +405,7 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
       const updated = await dreamSessionsService.update(session.id, {
         status: DreamSessionStatus.Structured,
         dreamKind: dreamKinds,
+        dreamImages: images.length > 0 ? images : undefined,
         relatedLifeEventIds: selectedEventIds.length > 0 ? selectedEventIds : undefined,
         dreams: seg
           ? [{ ...seg, analysis: updatedAnalysis }]
@@ -418,6 +462,19 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
                 <Chip key={ev.id} label={ev.title} variant="teal" icon="calendar" />
               ))}
             </View>
+          </View>
+        )}
+        {(session.dreamImages ?? []).length > 0 && (
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldLabelRow}>
+              <Ionicons name="images-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.fieldLabel}>Fotos ({session.dreamImages!.length})</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imgEditRow}>
+              {session.dreamImages!.map((img) => (
+                <Image key={img.publicId} source={{ uri: img.secureUrl }} style={styles.imgThumb} />
+              ))}
+            </ScrollView>
           </View>
         )}
       </ScrollView>
@@ -566,6 +623,42 @@ function TabStructured({ session, editing, onSessionChange }: TabProps) {
           </View>
         </View>
       </RNModal>
+
+      {/* ── Fotos del sueño ── */}
+      <View style={styles.fieldRow}>
+        <View style={styles.fieldLabelRow}>
+          <Ionicons name="images-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.fieldLabel}>Fotos del sueño (opcional)</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imgEditRow}>
+          {images.map((img) => (
+            <View key={img.publicId} style={styles.imgEditWrap}>
+              <Image source={{ uri: img.secureUrl }} style={styles.imgThumb} />
+              <Pressable
+                style={styles.imgRemoveBtn}
+                hitSlop={6}
+                onPress={() => removeImage(img.publicId)}
+              >
+                <Ionicons name="close-circle" size={20} color={colors.danger} />
+              </Pressable>
+            </View>
+          ))}
+          {images.length < MAX_IMAGES && (
+            <Pressable
+              style={({ pressed }) => [styles.imgAddBtn, pressed && { opacity: 0.7 }]}
+              onPress={pickImage}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator color={colors.accent} size="small" />
+              ) : (
+                <Ionicons name="camera-outline" size={24} color={colors.accent} />
+              )}
+              <Text style={styles.imgAddLabel}>Foto</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </View>
 
       <View style={styles.draftFooter}>
         {saved && (
@@ -1418,6 +1511,47 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: typography.weights.semibold,
   },
+
+  // Images
+  imgEditRow: {
+    flexDirection: 'row',
+    flexShrink: 0,
+  },
+  imgEditWrap: {
+    marginRight: spacing.sm,
+    position: 'relative',
+  },
+  imgThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceMuted,
+    marginRight: spacing.sm,
+  },
+  imgRemoveBtn: {
+    position: 'absolute',
+    top: -6,
+    right: 2,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+  },
+  imgAddBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  imgAddLabel: {
+    fontSize: 10,
+    color: colors.accent,
+    fontWeight: typography.weights.medium,
+  },
+
   eventLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
