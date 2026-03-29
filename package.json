@@ -1,7 +1,8 @@
 {
   "name": "dreamiap",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.3.3",
+  "author": "NovaLabs",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

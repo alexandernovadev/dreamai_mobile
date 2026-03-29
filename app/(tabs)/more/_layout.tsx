@@ -18,7 +18,6 @@ export default function MoreStackLayout() {
       <Stack.Screen name="totem" options={{ title: 'Totem' }} />
       <Stack.Screen name="audio-cues" options={{ title: 'Audio cues' }} />
       <Stack.Screen name="catalog" options={{ title: 'Catalog' }} />
-      <Stack.Screen name="version" options={{ title: 'Version' }} />
     </Stack>
   );
 }

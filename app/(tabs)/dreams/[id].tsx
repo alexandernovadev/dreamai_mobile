@@ -32,7 +32,12 @@ import {
   DreamSessionStatus,
   Perspective,
   type DreamSession,
+  type DreamSegmentAnalysis,
 } from '@/lib/docs/types/dream';
+import type { Character } from '@/lib/docs/types/character';
+import type { Location } from '@/lib/docs/types/location';
+import type { DreamObject } from '@/lib/docs/types/dream-object';
+import type { Feeling } from '@/lib/docs/types/feeling';
 import type { LifeEvent } from '@/lib/docs/types/life-event';
 import { effectiveDreamDate, isLikelyPlaceholderDreamTimestamp } from '@/lib/dreamDate';
 
@@ -56,6 +61,37 @@ const TAB_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
   Refining: 'color-wand-outline',
   Structured: 'grid-outline',
   Reflection: 'bulb-outline',
+};
+
+// ── Read-mode tabs ──
+const READ_TABS = ['Dream', 'Signal', 'Detail'] as const;
+type ReadTab = (typeof READ_TABS)[number];
+
+const READ_TAB_LABEL: Record<ReadTab, string> = {
+  Dream: 'Sueño',
+  Signal: 'Señales',
+  Detail: 'Detalle',
+};
+
+const READ_TAB_ICON: Record<ReadTab, keyof typeof Ionicons.glyphMap> = {
+  Dream: 'book-outline',
+  Signal: 'prism-outline',
+  Detail: 'information-circle-outline',
+};
+
+// ── Shared constants ──
+const ENTITY_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
+  character: { icon: 'person', color: '#5B9CF6', label: 'Personajes' },
+  location: { icon: 'location', color: '#6DD47E', label: 'Lugares' },
+  object: { icon: 'cube', color: '#F0C850', label: 'Objetos' },
+  feeling: { icon: 'heart', color: '#E06080', label: 'Emociones' },
+};
+
+const FEELING_LABELS: Record<string, string> = {
+  FEAR: 'Miedo', ANXIETY: 'Ansiedad', JOY: 'Alegría', PEACE: 'Paz',
+  SADNESS: 'Tristeza', ANGER: 'Ira', SHAME: 'Vergüenza', GUILT: 'Culpa',
+  CONFUSION: 'Confusión', LONGING: 'Nostalgia', AWE: 'Asombro',
+  DISGUST: 'Asco', NEUTRAL: 'Neutral', MIXED: 'Mixto', UNKNOWN: 'Desconocido',
 };
 
 const STATUS_LABEL: Record<DreamSessionStatus, string> = {
@@ -564,6 +600,257 @@ function TabReflection({ session, editing, onSessionChange }: TabProps) {
 }
 
 // ────────────────────────────────────────
+// Read-mode tab components
+// ────────────────────────────────────────
+
+function ReadTabDream({ session }: { session: DreamSession }) {
+  const text = session.rawNarrative ?? session.dreams?.[0]?.rawText ?? '';
+  return (
+    <ScrollView contentContainerStyle={rs.scrollContent} showsVerticalScrollIndicator={false}>
+      {text ? (
+        <Text style={rs.narrativeText}>{text}</Text>
+      ) : (
+        <View style={rs.emptyBlock}>
+          <Ionicons name="document-text-outline" size={40} color={colors.textMuted} />
+          <Text style={rs.emptyLabel}>Sin texto aún</Text>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+function ReadSignalSection({
+  icon,
+  color,
+  label,
+  count,
+  children,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  label: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={rs.signalSection}>
+      <View style={rs.signalHeader}>
+        <View style={[rs.signalIconBubble, { backgroundColor: color + '22' }]}>
+          <Ionicons name={icon} size={18} color={color} />
+        </View>
+        <Text style={[rs.signalTitle, { color }]}>{label}</Text>
+        <View style={[rs.signalCount, { backgroundColor: color + '22' }]}>
+          <Text style={[rs.signalCountText, { color }]}>{count}</Text>
+        </View>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function ReadTabSignal({ session }: { session: DreamSession }) {
+  const analysis = session.dreams?.[0]?.analysis;
+  const characters = analysis?.entities.characters ?? [];
+  const locations = analysis?.entities.locations ?? [];
+  const objects = analysis?.entities.objects ?? [];
+  const feelings = analysis?.entities.feelings ?? [];
+  const total = characters.length + locations.length + objects.length + feelings.length;
+
+  if (total === 0) {
+    return (
+      <ScrollView contentContainerStyle={rs.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={rs.emptyBlock}>
+          <Ionicons name="prism-outline" size={40} color={colors.textMuted} />
+          <Text style={rs.emptyLabel}>Sin señales etiquetadas</Text>
+          <Text style={rs.emptyHint}>Edita el sueño y refina para agregar personajes, lugares, objetos y emociones.</Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={rs.scrollContent} showsVerticalScrollIndicator={false}>
+      {characters.length > 0 && (
+        <ReadSignalSection icon="person" color="#5B9CF6" label="Personajes" count={characters.length}>
+          {characters.map((c) => (
+            <View key={c.id} style={rs.signalCard}>
+              <View style={rs.signalCardHeader}>
+                <Text style={rs.signalCardName}>{c.name}</Text>
+                {c.isKnown && (
+                  <View style={rs.knownBadge}>
+                    <Ionicons name="checkmark-circle" size={12} color={colors.success} />
+                    <Text style={rs.knownBadgeText}>Conocido</Text>
+                  </View>
+                )}
+              </View>
+              {c.description ? <Text style={rs.signalCardDesc}>{c.description}</Text> : null}
+              <View style={rs.signalCardMeta}>
+                <Ionicons name="shield-outline" size={12} color={colors.textMuted} />
+                <Text style={rs.signalCardMetaText}>
+                  {c.archetype === 'SHADOW' ? 'Sombra' : c.archetype === 'ANIMA_ANIMUS' ? 'Ánima/Ánimus' : c.archetype === 'WISE_FIGURE' ? 'Sabio/Guía' : c.archetype === 'PERSONA' ? 'Persona' : 'Sin clasificar'}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ReadSignalSection>
+      )}
+
+      {locations.length > 0 && (
+        <ReadSignalSection icon="location" color="#6DD47E" label="Lugares" count={locations.length}>
+          {locations.map((l) => (
+            <View key={l.id} style={rs.signalCard}>
+              <View style={rs.signalCardHeader}>
+                <Text style={rs.signalCardName}>{l.name}</Text>
+                {l.isFamiliar && (
+                  <View style={rs.knownBadge}>
+                    <Ionicons name="home" size={12} color={colors.success} />
+                    <Text style={rs.knownBadgeText}>Familiar</Text>
+                  </View>
+                )}
+              </View>
+              {l.description ? <Text style={rs.signalCardDesc}>{l.description}</Text> : null}
+              <View style={rs.signalCardMeta}>
+                <Ionicons name="compass-outline" size={12} color={colors.textMuted} />
+                <Text style={rs.signalCardMetaText}>
+                  {l.setting === 'URBAN' ? 'Urbano' : l.setting === 'NATURE' ? 'Naturaleza' : l.setting === 'INDOOR' ? 'Interior' : 'Abstracto'}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ReadSignalSection>
+      )}
+
+      {objects.length > 0 && (
+        <ReadSignalSection icon="cube" color="#F0C850" label="Objetos" count={objects.length}>
+          {objects.map((o) => (
+            <View key={o.id} style={rs.signalCard}>
+              <Text style={rs.signalCardName}>{o.name}</Text>
+              {o.description ? <Text style={rs.signalCardDesc}>{o.description}</Text> : null}
+            </View>
+          ))}
+        </ReadSignalSection>
+      )}
+
+      {feelings.length > 0 && (
+        <ReadSignalSection icon="heart" color="#E06080" label="Emociones" count={feelings.length}>
+          {feelings.map((f) => (
+            <View key={f.id} style={rs.signalCard}>
+              <Text style={rs.signalCardName}>{FEELING_LABELS[f.kind] ?? f.kind}</Text>
+              {f.notes ? <Text style={rs.signalCardDesc}>{f.notes}</Text> : null}
+            </View>
+          ))}
+        </ReadSignalSection>
+      )}
+    </ScrollView>
+  );
+}
+
+function ReadTabDetail({ session }: { session: DreamSession }) {
+  const analysis = session.dreams?.[0]?.analysis;
+  const kindLabel = DREAM_KIND_OPTIONS.find((o) => o.value === session.dreamKind)?.label ?? session.dreamKind ?? 'Sin clasificar';
+  const perspLabel = PERSPECTIVE_OPTIONS.find((o) => o.value === analysis?.perspective)?.label ?? 'Sin definir';
+  const isLucid = analysis?.isLucid ?? false;
+  const reflection = session.userThought ?? '';
+
+  const [allEvents, setAllEvents] = useState<LifeEvent[]>([]);
+  const eventIds = session.relatedLifeEventIds ?? [];
+
+  useEffect(() => {
+    if (eventIds.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await lifeEventsService.list();
+        if (!cancelled) setAllEvents(data);
+      } catch {
+        /* handled by global error */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const selectedEvents = eventIds
+    .map((eid) => allEvents.find((e) => e.id === eid))
+    .filter(Boolean) as LifeEvent[];
+
+  return (
+    <ScrollView contentContainerStyle={rs.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Classification */}
+      <View style={rs.detailGroup}>
+        <View style={rs.detailGroupHeader}>
+          <Ionicons name="grid-outline" size={16} color={colors.accent} />
+          <Text style={rs.detailGroupTitle}>Clasificación</Text>
+        </View>
+
+        <View style={rs.detailRow}>
+          <View style={rs.detailLabelRow}>
+            <Ionicons name="cloudy-night-outline" size={14} color={colors.textMuted} />
+            <Text style={rs.detailLabel}>Tipo</Text>
+          </View>
+          <Text style={rs.detailValue}>{kindLabel}</Text>
+        </View>
+
+        <View style={rs.detailRow}>
+          <View style={rs.detailLabelRow}>
+            <Ionicons name="eye-outline" size={14} color={colors.textMuted} />
+            <Text style={rs.detailLabel}>Perspectiva</Text>
+          </View>
+          <Text style={rs.detailValue}>{perspLabel}</Text>
+        </View>
+
+        <View style={rs.detailRow}>
+          <View style={rs.detailLabelRow}>
+            <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
+            <Text style={rs.detailLabel}>Lúcido</Text>
+          </View>
+          <View style={rs.lucidBadge}>
+            <Ionicons
+              name={isLucid ? 'checkmark-circle' : 'close-circle'}
+              size={16}
+              color={isLucid ? colors.success : colors.textMuted}
+            />
+            <Text style={[rs.detailValue, { color: isLucid ? colors.success : colors.textMuted }]}>
+              {isLucid ? 'Sí' : 'No'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Life events */}
+      {selectedEvents.length > 0 && (
+        <View style={rs.detailGroup}>
+          <View style={rs.detailGroupHeader}>
+            <Ionicons name="calendar-outline" size={16} color={colors.accent} />
+            <Text style={rs.detailGroupTitle}>Eventos de vida</Text>
+          </View>
+          <View style={styles.chipWrap}>
+            {selectedEvents.map((ev) => (
+              <Chip key={ev.id} label={ev.title} variant="teal" icon="calendar" />
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Reflection */}
+      <View style={rs.detailGroup}>
+        <View style={rs.detailGroupHeader}>
+          <Ionicons name="bulb-outline" size={16} color={colors.accent} />
+          <Text style={rs.detailGroupTitle}>Reflexión</Text>
+        </View>
+        {reflection ? (
+          <Text style={rs.reflectionText}>{reflection}</Text>
+        ) : (
+          <View style={rs.emptyInline}>
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.textMuted} />
+            <Text style={rs.emptyInlineText}>Aún sin reflexión</Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ────────────────────────────────────────
 // Main screen
 // ────────────────────────────────────────
 export default function DreamDetailScreen() {
@@ -577,6 +864,7 @@ export default function DreamDetailScreen() {
   const [session, setSession] = useState<DreamSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('Draft');
+  const [activeReadTab, setActiveReadTab] = useState<ReadTab>('Dream');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState(() => new Date());
   const [dateSaving, setDateSaving] = useState(false);
@@ -693,7 +981,7 @@ export default function DreamDetailScreen() {
     onSessionChange: handleSessionChange,
   };
 
-  function renderTabContent() {
+  function renderEditTabContent() {
     switch (activeTab) {
       case 'Draft':
         return <TabDraft {...tabProps} />;
@@ -703,6 +991,17 @@ export default function DreamDetailScreen() {
         return <TabStructured {...tabProps} />;
       case 'Reflection':
         return <TabReflection {...tabProps} />;
+    }
+  }
+
+  function renderReadTabContent() {
+    switch (activeReadTab) {
+      case 'Dream':
+        return <ReadTabDream session={session!} />;
+      case 'Signal':
+        return <ReadTabSignal session={session!} />;
+      case 'Detail':
+        return <ReadTabDetail session={session!} />;
     }
   }
 
@@ -755,33 +1054,59 @@ export default function DreamDetailScreen() {
         </View>
 
         {/* ── Tab bar ── */}
-        <View style={styles.tabBar}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab;
-            return (
-              <Pressable
-                key={tab}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                onPress={() => setActiveTab(tab)}
-                style={[styles.tabItem, active && styles.tabItemActive]}
-              >
-                <Ionicons
-                  name={TAB_ICON[tab]}
-                  size={14}
-                  color={active ? colors.textInverse : colors.textMuted}
-                />
-                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                  {TAB_LABEL[tab]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {editing ? (
+          <View style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setActiveTab(tab)}
+                  style={[styles.tabItem, active && styles.tabItemActive]}
+                >
+                  <Ionicons
+                    name={TAB_ICON[tab]}
+                    size={14}
+                    color={active ? colors.textInverse : colors.textMuted}
+                  />
+                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                    {TAB_LABEL[tab]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.tabBar}>
+            {READ_TABS.map((tab) => {
+              const active = activeReadTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setActiveReadTab(tab)}
+                  style={[styles.tabItem, active && styles.tabItemActive]}
+                >
+                  <Ionicons
+                    name={READ_TAB_ICON[tab]}
+                    size={16}
+                    color={active ? colors.textInverse : colors.textMuted}
+                  />
+                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                    {READ_TAB_LABEL[tab]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         {/* ── Content ── */}
         <View style={styles.contentArea}>
-          {renderTabContent()}
+          {editing ? renderEditTabContent() : renderReadTabContent()}
         </View>
 
         {datePickerOpen && Platform.OS === 'android' && (
@@ -1085,5 +1410,182 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.md,
     color: colors.accent,
     fontWeight: typography.weights.semibold,
+  },
+});
+
+// ── Read-mode styles ──
+const rs = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
+
+  // Dream tab
+  narrativeText: {
+    fontSize: typography.sizes.xl,
+    lineHeight: 32,
+    color: colors.text,
+  },
+
+  // Empty states
+  emptyBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxl,
+    gap: spacing.md,
+  },
+  emptyLabel: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  emptyHint: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+    lineHeight: 20,
+  },
+  emptyInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  emptyInlineText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+
+  // Signal tab
+  signalSection: {
+    gap: spacing.sm,
+  },
+  signalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  signalIconBubble: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signalTitle: {
+    flex: 1,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
+  },
+  signalCount: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  signalCountText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.bold,
+  },
+  signalCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    padding: spacing.md,
+    gap: spacing.xs,
+    marginLeft: spacing.xxl,
+  },
+  signalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  signalCardName: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium,
+    color: colors.text,
+  },
+  signalCardDesc: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  signalCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  signalCardMetaText: {
+    fontSize: typography.sizes.xs,
+    color: colors.textMuted,
+  },
+  knownBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(64, 240, 160, 0.12)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  knownBadgeText: {
+    fontSize: typography.sizes.xs,
+    color: colors.success,
+    fontWeight: typography.weights.medium,
+  },
+
+  // Detail tab
+  detailGroup: {
+    gap: spacing.md,
+  },
+  detailGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  detailGroupTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
+    color: colors.accent,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  detailLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  detailLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+  },
+  detailValue: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium,
+    color: colors.text,
+  },
+  lucidBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reflectionText: {
+    fontSize: typography.sizes.md,
+    color: colors.text,
+    lineHeight: 24,
+    fontStyle: 'italic',
   },
 });
