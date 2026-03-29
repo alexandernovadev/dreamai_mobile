@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,16 +66,24 @@ export default function DreamsListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  /** Bumped after a successful delete (or when starting a new load) so stale in-flight GETs cannot overwrite state. */
+  const listLoadGenRef = useRef(0);
+
   const load = useCallback(async () => {
+    const gen = ++listLoadGenRef.current;
     try {
       setLoading(true);
       const data = await dreamSessionsService.list();
+      if (gen !== listLoadGenRef.current) return;
       data.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       setSessions(data);
     } catch (e) {
+      if (gen !== listLoadGenRef.current) return;
       console.warn('Failed to load sessions', e);
     } finally {
-      setLoading(false);
+      if (gen === listLoadGenRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -120,10 +128,12 @@ export default function DreamsListScreen() {
 
   async function handleRemove() {
     if (!removeId) return;
+    const idToRemove = removeId;
     setRemoving(true);
     try {
-      await dreamSessionsService.remove(removeId);
-      setSessions((prev) => prev.filter((s) => s.id !== removeId));
+      await dreamSessionsService.remove(idToRemove);
+      listLoadGenRef.current += 1;
+      setSessions((prev) => prev.filter((s) => s.id !== idToRemove));
       setRemoveId(null);
     } catch (e) {
       console.warn('Failed to remove session', e);
@@ -205,6 +215,7 @@ export default function DreamsListScreen() {
         ) : (
           <FlatList
             data={sessions}
+            extraData={sessions}
             keyExtractor={(s) => s.id}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
