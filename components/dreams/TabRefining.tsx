@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -311,29 +313,30 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
 
   // ── Edit mode ──
   return (
-    <View style={s.flex}>
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Selectable text */}
-        <View style={s.textBox}>
-          <TextInput
-            value={text}
-            editable={false}
-            multiline
-            scrollEnabled={false}
-            style={s.selectableText}
-            onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-          />
-        </View>
+    <KeyboardAvoidingView
+      style={s.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
+    >
+      <TextInput
+        value={text}
+        editable={false}
+        multiline
+        textAlignVertical="top"
+        style={s.selectableText}
+        onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
+      />
 
-        {/* Entity lists */}
-        <EntityList type="character" items={characters} onRemove={(id) => removeEntity('character', id)} onRemoveAll={() => setClearTarget('character')} />
-        <EntityList type="location" items={locations} onRemove={(id) => removeEntity('location', id)} onRemoveAll={() => setClearTarget('location')} />
-        <EntityList type="object" items={objects} onRemove={(id) => removeEntity('object', id)} onRemoveAll={() => setClearTarget('object')} />
-        <FeelingList items={feelings} onRemove={(id) => removeEntity('feeling', id)} onRemoveAll={() => setClearTarget('feeling')} />
-      </ScrollView>
-
-      {/* ── Sticky footer ── */}
+      {/* ── Footer ── */}
       <View style={s.stickyFooter}>
+        {totalEntities > 0 && (
+          <ScrollView style={s.entityScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            <EntityList type="character" items={characters} onRemove={(id) => removeEntity('character', id)} onRemoveAll={() => setClearTarget('character')} />
+            <EntityList type="location" items={locations} onRemove={(id) => removeEntity('location', id)} onRemoveAll={() => setClearTarget('location')} />
+            <EntityList type="object" items={objects} onRemove={(id) => removeEntity('object', id)} onRemoveAll={() => setClearTarget('object')} />
+            <FeelingList items={feelings} onRemove={(id) => removeEntity('feeling', id)} onRemoveAll={() => setClearTarget('feeling')} />
+          </ScrollView>
+        )}
         {hasSelection && (
           <Text style={s.selectionHint}>
             Selección: «{selectedQuote.length > 40 ? selectedQuote.slice(0, 40) + '…' : selectedQuote}»
@@ -522,7 +525,7 @@ export function TabRefining({ session, editing, onSessionChange }: TabRefiningPr
           <Text style={s.clearConfirmLabel}>Sí, eliminar todos</Text>
         </Pressable>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -650,10 +653,8 @@ const s = StyleSheet.create({
   hint: { fontSize: typography.sizes.sm, color: colors.textMuted, fontStyle: 'italic' },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
 
-  textBox: {
-    // no background/border — same feel as Draft
-  },
   selectableText: {
+    flex: 1,
     fontSize: typography.sizes.xl,
     lineHeight: 32,
     color: colors.text,
@@ -665,6 +666,9 @@ const s = StyleSheet.create({
     fontStyle: 'italic',
   },
 
+  entityScroll: {
+    maxHeight: 140,
+  },
   stickyFooter: {
     gap: spacing.sm,
     paddingTop: spacing.sm,
