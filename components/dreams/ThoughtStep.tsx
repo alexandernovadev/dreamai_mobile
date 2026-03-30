@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
@@ -18,21 +25,29 @@ import { colors, radius, spacing, typography } from '@/theme';
 export type ThoughtStepProps = {
   sessionId: string;
   initialUserThought?: string;
+  /** Última lectura IA guardada en la sesión (opcional). */
+  initialAiSummarize?: string;
   onSaved?: (session: DreamSession) => void;
   onError: (message: string, kind: 'network' | 'server') => void;
 };
 
 /**
- * Paso final: reflexión escrita + acción de IA (UI; la IA llegará después).
+ * Paso final: reflexión escrita + lectura sugerida por IA (opcional, persistida en `aiSummarize`).
  */
 export function ThoughtStep({
   sessionId,
   initialUserThought,
+  initialAiSummarize,
   onSaved,
   onError,
 }: ThoughtStepProps) {
   const [text, setText] = useState(initialUserThought ?? '');
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [suggestion, setSuggestion] = useState<string | null>(
+    initialAiSummarize?.trim() ? initialAiSummarize.trim() : null,
+  );
+  const [savingAiNote, setSavingAiNote] = useState(false);
   const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const trimmed = text.trim();
@@ -41,6 +56,11 @@ export function ThoughtStep({
   useEffect(() => {
     setText(initialUserThought ?? '');
   }, [sessionId, initialUserThought]);
+
+  useEffect(() => {
+    const s = initialAiSummarize?.trim();
+    setSuggestion(s ? s : null);
+  }, [sessionId, initialAiSummarize]);
 
   const handleSave = useCallback(async () => {
     if (!text.trim()) {
@@ -63,6 +83,55 @@ export function ThoughtStep({
       setSaving(false);
     }
   }, [sessionId, text, onError, onSaved, showSuccessBanner]);
+
+  const handleSuggestThought = useCallback(async () => {
+    setAiLoading(true);
+    try {
+      const res = await dreamSessionsService.suggestThought(sessionId);
+      const t = res.suggestion?.trim() ?? '';
+      setSuggestion(t.length > 0 ? t : null);
+      if (!t) {
+        onError('La IA no devolvió texto. Inténtalo de nuevo.', 'server');
+      }
+    } catch (e) {
+      const msg = apiErrorMessage(e);
+      const kind =
+        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+      onError(msg, kind);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [sessionId, onError]);
+
+  const handleAppendSuggestion = useCallback(() => {
+    if (!suggestion?.trim()) return;
+    const add = suggestion.trim();
+    setText((prev) => {
+      const p = prev.trim();
+      if (!p) return add;
+      return `${p}\n\n—\n\n${add}`;
+    });
+    showSuccessBanner('Texto añadido a tu reflexión');
+  }, [suggestion, showSuccessBanner]);
+
+  const handleSaveAiNote = useCallback(async () => {
+    if (!suggestion?.trim()) return;
+    setSavingAiNote(true);
+    try {
+      const session = await dreamSessionsService.update(sessionId, {
+        aiSummarize: suggestion.trim(),
+      });
+      onSaved?.(session);
+      showSuccessBanner('Nota IA guardada');
+    } catch (e) {
+      const msg = apiErrorMessage(e);
+      const kind =
+        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+      onError(msg, kind);
+    } finally {
+      setSavingAiNote(false);
+    }
+  }, [sessionId, suggestion, onError, onSaved, showSuccessBanner]);
 
   return (
     <KeyboardAvoidingScroll
@@ -94,13 +163,15 @@ export function ThoughtStep({
         <Text style={styles.aiLabel}>Asistencia</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityHint="La sugerencia con IA estará disponible en una próxima versión"
+          accessibilityHint="Genera una lectura sugerida con inteligencia artificial"
           onPress={() => {
-            /* IA: próximamente */
+            if (!aiLoading) void handleSuggestThought();
           }}
+          disabled={aiLoading}
           style={({ pressed }) => [
             styles.aiBtnOuter,
-            pressed && { opacity: 0.92 },
+            pressed && !aiLoading && { opacity: 0.92 },
+            aiLoading && { opacity: 0.75 },
           ]}
         >
           <LinearGradient
@@ -109,21 +180,52 @@ export function ThoughtStep({
             end={{ x: 1, y: 1 }}
             style={styles.aiGradient}
           >
-            <View style={styles.aiIconRing}>
-              <Ionicons name="sparkles" size={26} color="#fff6d0" />
-            </View>
+            {aiLoading ? (
+              <ActivityIndicator color="#fff6d0" style={styles.aiSpinner} />
+            ) : (
+              <View style={styles.aiIconRing}>
+                <Ionicons name="sparkles" size={26} color="#fff6d0" />
+              </View>
+            )}
             <View style={styles.aiTexts}>
               <Text style={styles.aiTitle}>Sugerencia con IA</Text>
               <Text style={styles.aiSubtitle}>
                 Una lectura sugerida a partir de tu sueño y tu nota
               </Text>
-              <View style={styles.badgeSoon}>
-                <Text style={styles.badgeSoonText}>Próximamente</Text>
-              </View>
             </View>
-            <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.45)" />
+            {!aiLoading ? (
+              <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.45)" />
+            ) : null}
           </LinearGradient>
         </Pressable>
+
+        {suggestion ? (
+          <View style={styles.suggestionWrap}>
+            <Text style={styles.suggestionLabel}>Lectura sugerida</Text>
+            <ScrollView
+              style={styles.suggestionScroll}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+            >
+              <Text style={styles.suggestionText}>{suggestion}</Text>
+            </ScrollView>
+            <View style={styles.suggestionActions}>
+              <Button
+                variant="outline"
+                onPress={() => void handleAppendSuggestion()}
+              >
+                Añadir a mi reflexión
+              </Button>
+              <Button
+                variant="purple"
+                onPress={() => void handleSaveAiNote()}
+                disabled={savingAiNote}
+              >
+                {savingAiNote ? 'Guardando…' : 'Guardar como nota IA'}
+              </Button>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.saveBlock}>
@@ -174,6 +276,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
   },
+  aiSpinner: {
+    marginLeft: spacing.sm,
+    marginRight: spacing.sm,
+  },
   aiIconRing: {
     width: 52,
     height: 52,
@@ -198,21 +304,32 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  badgeSoon: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+  suggestionWrap: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: colors.borderSubtle,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceMuted,
   },
-  badgeSoonText: {
-    fontSize: 10,
+  suggestionLabel: {
+    fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semibold,
-    color: 'rgba(255, 230, 180, 0.95)',
-    letterSpacing: 0.4,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  suggestionScroll: {
+    maxHeight: 220,
+  },
+  suggestionText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  suggestionActions: {
+    gap: spacing.sm,
   },
   saveBlock: {
     gap: spacing.md,

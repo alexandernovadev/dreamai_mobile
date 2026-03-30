@@ -65,6 +65,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [detailKinds, setDetailKinds] = useState<string[]>([]);
   const [detailImages, setDetailImages] = useState<string[]>([]);
   const [userThought, setUserThought] = useState<string>('');
+  const [aiSummarize, setAiSummarize] = useState<string | undefined>();
   const { message: draftSuccessMsg, show: showDraftSuccess } = useSuccessBanner();
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailKinds(s.dreamKind ?? []);
         setDetailImages(s.dreamImages ?? []);
         setUserThought(s.userThought ?? '');
+        setAiSummarize(s.aiSummarize);
         setDraftSaved(true);
         setBootLoading(false);
       })
@@ -127,6 +129,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailKinds(saved.dreamKind ?? []);
         setDetailImages(saved.dreamImages ?? []);
         setUserThought(saved.userThought ?? '');
+        setAiSummarize(saved.aiSummarize);
       } else {
         const created = await dreamSessionsService.create({
           timestamp: now,
@@ -138,6 +141,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailKinds(created.dreamKind ?? []);
         setDetailImages(created.dreamImages ?? []);
         setUserThought(created.userThought ?? '');
+        setAiSummarize(created.aiSummarize);
       }
       setDraftSaved(true);
       showDraftSuccess('Borrador guardado');
@@ -341,7 +345,11 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                 <ThoughtStep
                   sessionId={sessionId}
                   initialUserThought={userThought}
-                  onSaved={(s) => setUserThought(s.userThought ?? '')}
+                  initialAiSummarize={aiSummarize}
+                  onSaved={(s) => {
+                    setUserThought(s.userThought ?? '');
+                    setAiSummarize(s.aiSummarize);
+                  }}
                   onError={(message, kind) => setSaveError({ message, kind })}
                 />
               </View>

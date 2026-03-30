@@ -71,6 +71,8 @@ export type CreateDreamSessionInput = {
   dreamKind?: string[];
   dreamImages?: string[];
   userThought?: string;
+  /** Lectura sugerida por IA (persistida aparte de la reflexión del usuario). */
+  aiSummarize?: string;
 };
 
 /** Refs que acepta el backend en `analysis.entities`. */
@@ -120,12 +122,20 @@ function stripUpdate(
   if (input.dreamKind !== undefined) out.dreamKind = input.dreamKind;
   if (input.dreamImages !== undefined) out.dreamImages = input.dreamImages;
   if (input.userThought !== undefined) out.userThought = input.userThought;
+  if (input.aiSummarize !== undefined) out.aiSummarize = input.aiSummarize;
   if (input.analysis !== undefined) out.analysis = input.analysis;
   return out;
 }
 
 /** Hint de idioma para la IA (salida alineada con la app en español). */
 export const DEFAULT_AI_SUGGEST_LOCALE = 'es';
+
+/** Respuesta de `POST /dream-sessions/:id/ai/suggest-thought`. */
+export type DreamThoughtSuggestResponse = {
+  schemaVersion: number;
+  dreamSessionId: string;
+  suggestion: string;
+};
 
 /** Respuesta de `GET /dream-sessions/:id/hydrated`. */
 export type DreamSessionHydratedMaps = {
@@ -202,6 +212,14 @@ export const dreamSessionsService = {
       { locale: DEFAULT_AI_SUGGEST_LOCALE },
     );
   },
+
+  /** Reflexión: lectura sugerida (no persiste hasta que guardes `aiSummarize` en update). */
+  async suggestThought(sessionId: string): Promise<DreamThoughtSuggestResponse> {
+    return api.post<DreamThoughtSuggestResponse>(
+      `/dream-sessions/${sessionId}/ai/suggest-thought`,
+      { locale: DEFAULT_AI_SUGGEST_LOCALE },
+    );
+  },
 };
 
 /** Respuesta de `POST /dream-sessions/:id/ai/suggest-elements` (staging; no escribe entidades). */
@@ -230,7 +248,6 @@ export type SuggestedCharacterFromAi = {
   description: string;
   isKnown: boolean;
   archetype: string;
-  quote?: string;
   confidence?: number;
 };
 
@@ -239,21 +256,18 @@ export type SuggestedLocationFromAi = {
   description: string;
   isFamiliar: boolean;
   setting: string;
-  quote?: string;
   confidence?: number;
 };
 
 export type SuggestedObjectFromAi = {
   name: string;
   description?: string;
-  quote?: string;
   confidence?: number;
 };
 
 export type SuggestedEventFromAi = {
   label: string;
   description?: string;
-  quote?: string;
   confidence?: number;
 };
 

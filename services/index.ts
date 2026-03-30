@@ -19,6 +19,7 @@ export {
   type SuggestedLocationFromAi,
   type SuggestedObjectFromAi,
   type SuggestedEventFromAi,
+  type DreamThoughtSuggestResponse,
 } from './dreamSessions';
 export {
   charactersService,
