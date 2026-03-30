@@ -1,6 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,37 +14,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { apiErrorMessage } from '@/services/api';
 import {
-  charactersService,
-  contextLivesService,
-  dreamEventsService,
-  dreamObjectsService,
-  feelingsService,
-  locationsService,
-} from '@/services';
+  fetchSignalsCatalogEntity,
+  mapSignalsCatalogEntityToDetail,
+} from '@/lib/signalsCatalogEntity';
+import { queryKeys } from '@/lib/queryKeys';
 import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
 }
-
-function feelingTitleEn(kind: string): string {
-  return kind
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
-type DetailState =
-  | { loading: true }
-  | { loading: false; error: string }
-  | {
-      loading: false;
-      title: string;
-      subtitle?: string;
-      imageUri?: string;
-      appearanceCount: number;
-    };
 
 /** /signals/:entity/:id — catalog item detail. */
 export default function SignalsCatalogDetailScreen() {
@@ -55,90 +34,29 @@ export default function SignalsCatalogDetailScreen() {
 
   const slug = (entity ?? '').toLowerCase();
   const rawId = (id ?? '').trim();
-  const [state, setState] = useState<DetailState>({ loading: true });
+  const slugOk = isSignalSlug(slug) && !!rawId;
 
-  const load = useCallback(async () => {
-    if (!isSignalSlug(slug) || !rawId) {
-      setState({ loading: false, error: 'Invalid link' });
-      return;
-    }
-    setState({ loading: true });
-    try {
-      switch (slug) {
-        case 'characters': {
-          const d = await charactersService.getOne(rawId);
-          setState({
-            loading: false,
-            title: d.name,
-            subtitle: d.description,
-            imageUri: d.imageUri,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        case 'locations': {
-          const d = await locationsService.getOne(rawId);
-          setState({
-            loading: false,
-            title: d.name,
-            subtitle: d.description,
-            imageUri: d.imageUri,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        case 'objects': {
-          const d = await dreamObjectsService.getOne(rawId);
-          setState({
-            loading: false,
-            title: d.name,
-            subtitle: d.description,
-            imageUri: d.imageUri,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        case 'events': {
-          const d = await dreamEventsService.getOne(rawId);
-          setState({
-            loading: false,
-            title: d.label,
-            subtitle: d.description,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        case 'life-context': {
-          const d = await contextLivesService.getOne(rawId);
-          setState({
-            loading: false,
-            title: d.title,
-            subtitle: d.description,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        case 'feelings': {
-          const d = await feelingsService.getOne(rawId);
-          setState({
-            loading: false,
-            title: feelingTitleEn(d.kind),
-            subtitle: d.notes,
-            appearanceCount: d.dreamAppearances?.count ?? 0,
-          });
-          break;
-        }
-        default:
-          setState({ loading: false, error: 'Unknown type' });
-      }
-    } catch (e) {
-      setState({ loading: false, error: apiErrorMessage(e) });
-    }
-  }, [slug, rawId]);
+  const detailQuery = useQuery({
+    queryKey: queryKeys.signals.catalogDetail(
+      slug as SignalEntityListSlug,
+      rawId,
+    ),
+    queryFn: () =>
+      fetchSignalsCatalogEntity(slug as SignalEntityListSlug, rawId),
+    enabled: slugOk,
+  });
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const view =
+    detailQuery.data != null
+      ? mapSignalsCatalogEntityToDetail(detailQuery.data)
+      : null;
+
+  const err =
+    !slugOk
+      ? 'Invalid link'
+      : detailQuery.error
+        ? apiErrorMessage(detailQuery.error)
+        : null;
 
   return (
     <LinearGradient
@@ -170,22 +88,22 @@ export default function SignalsCatalogDetailScreen() {
           </Pressable>
         </View>
 
-        {state.loading ? (
+        {detailQuery.isPending && slugOk ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
-        ) : 'error' in state && state.error ? (
-          <Text style={styles.err}>{state.error}</Text>
-        ) : state.loading === false && 'title' in state ? (
+        ) : err ? (
+          <Text style={styles.err}>{err}</Text>
+        ) : view ? (
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.hero}>
-              {state.imageUri ? (
+              {view.imageUri ? (
                 <Image
-                  source={{ uri: state.imageUri }}
+                  source={{ uri: view.imageUri }}
                   style={styles.heroImg}
                   contentFit="cover"
                 />
@@ -195,12 +113,12 @@ export default function SignalsCatalogDetailScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.title}>{state.title}</Text>
-            {state.subtitle ? (
-              <Text style={styles.desc}>{state.subtitle}</Text>
+            <Text style={styles.title}>{view.title}</Text>
+            {view.subtitle ? (
+              <Text style={styles.desc}>{view.subtitle}</Text>
             ) : null}
             <Text style={styles.meta}>
-              Appearances ×{state.appearanceCount}
+              Appearances ×{view.appearanceCount}
             </Text>
             <Pressable
               style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.9 }]}

@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   apiErrorMessage,
   dreamSessionsService,
@@ -60,33 +63,25 @@ export default function DreamListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [dreams, setDreams] = useState<DreamSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const listQuery = useQuery({
+    queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+    queryFn: () => dreamSessionsService.list(DREAM_LIST_QUERY_PARAMS),
+  });
 
-  const load = useCallback(async (isRefresh: boolean) => {
-    if (isRefresh) setRefreshing(true);
-    setError(null);
-    try {
-      const res = await dreamSessionsService.list({ page: 1, limit: 50 });
-      setDreams(res.data);
-    } catch (e) {
-      setError(apiErrorMessage(e));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const dreams = listQuery.data?.data ?? [];
+  const error = listQuery.error ? apiErrorMessage(listQuery.error) : null;
+  const loading = listQuery.isPending && dreams.length === 0;
+  const refreshing =
+    listQuery.isFetching && !listQuery.isPending && dreams.length > 0;
 
   useFocusEffect(
     useCallback(() => {
-      void load(false);
-    }, [load]),
+      void listQuery.refetch();
+    }, [listQuery.refetch]),
   );
 
   function onRefresh() {
-    void load(true);
+    void listQuery.refetch();
   }
 
   function goView(id: string) {
@@ -113,7 +108,7 @@ export default function DreamListScreen() {
           </View>
         </View>
 
-        {loading && dreams.length === 0 ? (
+        {loading ? (
           <View style={s.loadingBox}>
             <ActivityIndicator size="large" color={colors.accent} />
             <Text style={s.loadingText}>Cargando sueños…</Text>
@@ -124,10 +119,7 @@ export default function DreamListScreen() {
             <Text style={s.errorText}>{error}</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                setLoading(true);
-                void load(false);
-              }}
+              onPress={() => void listQuery.refetch()}
               style={({ pressed }) => [s.retryBtn, pressed && { opacity: 0.85 }]}
             >
               <Text style={s.retryBtnText}>Reintentar</Text>

@@ -1,6 +1,9 @@
 export { API_BASE_URL } from './config';
 export { api, ApiError, apiErrorMessage, postFormData } from './api';
-export { uploadDreamImageToCloudinary } from './cloudinary';
+export {
+  uploadDreamImageToCloudinary,
+  type CloudinaryUploadContext,
+} from './cloudinary';
 export { DREAM_KIND_OPTIONS } from './dreamKinds';
 export {
   dreamSessionsService,

@@ -1,6 +1,7 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -8,11 +9,13 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { EntityCatalogListRow } from '@/components/signals/EntityCatalogListRow';
+import { EntityCatalogGridItem } from '@/components/signals/EntityCatalogGridItem';
+import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage } from '@/services/api';
 import {
   ENTITY_CATALOG_PAGE_SIZE,
@@ -23,12 +26,14 @@ import {
   type SignalEntityListSlug,
 } from '@/services/signalEntities';
 import type { SignalHubCardItem } from '@/services/signalsHub';
-import type { PaginatedMeta } from '@/services/query';
 import { colors, gradients, spacing, typography } from '@/theme';
 
 function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
 }
+
+const GRID_COLS = 5;
+const GRID_GAP = spacing.sm;
 
 /** /signals/:entity — full catalog list (e.g. /signals/characters). */
 export default function SignalsEntityListScreen() {
@@ -37,81 +42,64 @@ export default function SignalsEntityListScreen() {
   const insets = useSafeAreaInsets();
   const bg = gradients.background;
 
+  const { width: windowWidth } = useWindowDimensions();
   const slug = (entity ?? '').toLowerCase();
   const known = SIGNAL_ENTITY_SECTIONS.find((s) => s.listSlug === slug);
   const heading = known?.title ?? 'Catalog';
 
-  const [items, setItems] = useState<SignalHubCardItem[]>([]);
-  const [meta, setMeta] = useState<PaginatedMeta | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const gridContentWidth = windowWidth - spacing.xl * 2;
+  const gridCellWidth =
+    (gridContentWidth - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
 
-  const loadPage = useCallback(
-    async (
-      nextPage: number,
-      mode: 'replace' | 'append',
-      fromRefresh = false,
-    ) => {
-      if (!isSignalSlug(slug)) {
-        setError('Unknown catalog type');
-        setLoading(false);
-        return;
-      }
-      if (mode === 'append') {
-        setLoadingMore(true);
-      } else if (!fromRefresh) {
-        setLoading(true);
-      }
-      setError(null);
-      try {
-        const { items: rows, meta: m } = await fetchEntityListPage(
-          slug,
-          nextPage,
-          ENTITY_CATALOG_PAGE_SIZE,
-        );
-        setMeta(m);
-        setItems((prev) => (mode === 'append' ? [...prev, ...rows] : rows));
-      } catch (e) {
-        setError(apiErrorMessage(e));
-        if (mode === 'replace') {
-          setItems([]);
-          setMeta(null);
-        }
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-        setRefreshing(false);
-      }
-    },
-    [slug],
+  const slugOk = isSignalSlug(slug);
+
+  const listQuery = useInfiniteQuery({
+    queryKey: queryKeys.signals.catalogList(slug as SignalEntityListSlug),
+    queryFn: ({ pageParam }) =>
+      fetchEntityListPage(
+        slug as SignalEntityListSlug,
+        pageParam,
+        ENTITY_CATALOG_PAGE_SIZE,
+      ),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.page < lastPage.meta.totalPages
+        ? lastPage.meta.page + 1
+        : undefined,
+    enabled: slugOk,
+  });
+
+  const items = useMemo(
+    () => listQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [listQuery.data],
   );
 
-  useEffect(() => {
-    void loadPage(1, 'replace');
-  }, [slug, loadPage]);
+  const errorMsg = listQuery.error
+    ? apiErrorMessage(listQuery.error)
+    : null;
+
+  const loading = listQuery.isPending && items.length === 0;
+  const refreshing =
+    listQuery.isRefetching && !listQuery.isFetchingNextPage;
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    void loadPage(1, 'replace', true);
-  }, [loadPage]);
+    void listQuery.refetch();
+  }, [listQuery]);
 
   const onEndReached = useCallback(() => {
-    if (!meta || loading || loadingMore || refreshing) return;
-    if (meta.page >= meta.totalPages) return;
-    void loadPage(meta.page + 1, 'append');
-  }, [meta, loading, loadingMore, refreshing, loadPage]);
+    if (!listQuery.hasNextPage || listQuery.isFetchingNextPage) return;
+    void listQuery.fetchNextPage();
+  }, [listQuery]);
 
   const openDetail = useCallback(
     (item: SignalHubCardItem) => {
-      if (!isSignalSlug(slug)) return;
+      if (!slugOk) return;
       router.push(`/signals/${slug}/${item.id}`);
     },
-    [router, slug],
+    [router, slug, slugOk],
   );
 
-  if (!isSignalSlug(slug)) {
+  if (!slugOk) {
     return (
       <LinearGradient
         colors={[...bg.colors]}
@@ -152,14 +140,14 @@ export default function SignalsEntityListScreen() {
           <View style={styles.topBarSpacer} />
         </View>
 
-        {error && !loading ? (
+        {errorMsg && !loading ? (
           <View style={styles.banner}>
             <Ionicons name="warning-outline" size={18} color={colors.warning} />
-            <Text style={styles.bannerText}>{error}</Text>
+            <Text style={styles.bannerText}>{errorMsg}</Text>
           </View>
         ) : null}
 
-        {loading && items.length === 0 ? (
+        {loading ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
@@ -167,9 +155,14 @@ export default function SignalsEntityListScreen() {
           <FlatList
             data={items}
             keyExtractor={(it) => it.id}
+            numColumns={GRID_COLS}
+            columnWrapperStyle={styles.gridRow}
             renderItem={({ item }) => (
-              <Pressable onPress={() => openDetail(item)}>
-                <EntityCatalogListRow sectionSlug={slug} item={item} />
+              <Pressable
+                style={{ width: gridCellWidth }}
+                onPress={() => openDetail(item)}
+              >
+                <EntityCatalogGridItem sectionSlug={slug} item={item} />
               </Pressable>
             )}
             contentContainerStyle={styles.listContent}
@@ -183,7 +176,7 @@ export default function SignalsEntityListScreen() {
             onEndReached={onEndReached}
             onEndReachedThreshold={0.35}
             ListFooterComponent={
-              loadingMore ? (
+              listQuery.isFetchingNextPage ? (
                 <ActivityIndicator
                   style={styles.footerLoader}
                   color={colors.accent}
@@ -191,7 +184,7 @@ export default function SignalsEntityListScreen() {
               ) : null
             }
             ListEmptyComponent={
-              !loading ? (
+              !listQuery.isPending ? (
                 <Text style={styles.empty}>No entries yet</Text>
               ) : null
             }
@@ -228,6 +221,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: spacing.xxxl,
+  },
+  gridRow: {
+    gap: GRID_GAP,
+    marginBottom: GRID_GAP,
   },
   center: {
     flex: 1,

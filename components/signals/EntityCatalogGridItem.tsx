@@ -19,79 +19,74 @@ type Props = {
   item: SignalHubCardItem;
 };
 
-/** Full-width row for catalog “See all” lists. */
-export function EntityCatalogListRow({ sectionSlug, item }: Props) {
+/** Compact grid cell for “See all” /signals/:entity (5 per row). */
+export function EntityCatalogGridItem({ sectionSlug, item }: Props) {
   const icon = ICON[sectionSlug];
   return (
-    <View style={styles.row} accessibilityLabel={`${item.title}, ${item.appearanceCount} appearances`}>
-      <View style={styles.thumb}>
+    <View
+      style={styles.cell}
+      accessibilityLabel={`${item.title}, ${item.appearanceCount} appearances`}
+    >
+      <View style={styles.imageWrap}>
         {item.imageUri ? (
           <Image
             source={{ uri: item.imageUri }}
-            style={styles.thumbImg}
+            style={styles.image}
             contentFit="cover"
             transition={200}
           />
         ) : (
-          <View style={styles.thumbPlaceholder}>
-            <Ionicons name={icon} size={28} color={colors.accentMuted} />
+          <View style={styles.placeholder}>
+            <Ionicons name={icon} size={22} color={colors.accentMuted} />
           </View>
         )}
       </View>
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={styles.meta}>Appearances ×{item.appearanceCount}</Text>
-      </View>
+      <Text style={styles.title} numberOfLines={2}>
+        {item.title}
+      </Text>
+      <Text style={styles.meta} numberOfLines={1}>
+        ×{item.appearanceCount}
+      </Text>
     </View>
   );
 }
 
-const THUMB = 56;
-
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.md,
+  cell: {
+    width: '100%',
+    borderRadius: radius.sm,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    marginBottom: spacing.sm,
-  },
-  thumb: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: radius.sm,
     overflow: 'hidden',
+  },
+  imageWrap: {
+    width: '100%',
+    aspectRatio: 1,
     backgroundColor: colors.surfaceMuted,
   },
-  thumbImg: {
-    width: THUMB,
-    height: THUMB,
+  image: {
+    width: '100%',
+    height: '100%',
   },
-  thumbPlaceholder: {
+  placeholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: {
-    flex: 1,
-    minWidth: 0,
-  },
   title: {
-    fontSize: typography.sizes.md,
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
+    fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semibold,
     color: colors.text,
-    lineHeight: 22,
+    lineHeight: 14,
   },
   meta: {
-    marginTop: 2,
-    fontSize: typography.sizes.sm,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
+    paddingTop: 2,
+    fontSize: 10,
     color: colors.textMuted,
   },
 });

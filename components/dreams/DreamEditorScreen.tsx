@@ -1,9 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -46,6 +49,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [bootLoading, setBootLoading] = useState(mode === 'edit');
   const [bootError, setBootError] = useState<string | null>(null);
@@ -130,6 +134,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailImages(saved.dreamImages ?? []);
         setUserThought(saved.userThought ?? '');
         setAiSummarize(saved.aiSummarize);
+        queryClient.setQueryData(
+          queryKeys.dreamSessions.detail(saved.id),
+          saved,
+        );
       } else {
         const created = await dreamSessionsService.create({
           timestamp: now,
@@ -142,7 +150,14 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailImages(created.dreamImages ?? []);
         setUserThought(created.userThought ?? '');
         setAiSummarize(created.aiSummarize);
+        queryClient.setQueryData(
+          queryKeys.dreamSessions.detail(created.id),
+          created,
+        );
       }
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
       setDraftSaved(true);
       showDraftSuccess('Borrador guardado');
     } catch (e) {

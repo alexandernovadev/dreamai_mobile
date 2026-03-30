@@ -1,12 +1,13 @@
+import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SignalsEntityCard } from '@/components/signals/SignalsEntityCard';
 import { SignalsEntityCardShell } from '@/components/signals/SignalsEntityCardShell';
 import { SignalsSection } from '@/components/signals/SignalsSection';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   loadAllSignalHubSections,
   type SignalHubCardItem,
@@ -22,7 +23,7 @@ const CARDS_PER_SECTION = 5;
 type HubState = Record<
   SignalEntityListSlug,
   { items: SignalHubCardItem[]; error: string | null }
-> | null;
+>;
 
 /**
  * /signals — hub. See all → /signals/:entity (e.g. /signals/characters).
@@ -31,22 +32,14 @@ export default function SignalsHubScreen() {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [hub, setHub] = useState<HubState>(null);
-  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await loadAllSignalHubSections();
-      setHub(data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const hubQuery = useQuery({
+    queryKey: queryKeys.signals.hub(),
+    queryFn: loadAllSignalHubSections,
+  });
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const hub: HubState | null = hubQuery.data ?? null;
+  const loading = hubQuery.isPending;
 
   return (
     <LinearGradient

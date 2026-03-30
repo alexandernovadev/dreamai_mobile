@@ -6,6 +6,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import * as SystemUI from 'expo-system-ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import { QueryProvider } from '@/providers/QueryProvider';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -18,9 +19,11 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-      <StatusBar hidden style="light" hideTransitionAnimation="fade" />
-    </SafeAreaProvider>
+    <QueryProvider>
+      <SafeAreaProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+        <StatusBar hidden style="light" hideTransitionAnimation="fade" />
+      </SafeAreaProvider>
+    </QueryProvider>
   );
 }

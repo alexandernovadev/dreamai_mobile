@@ -9,6 +9,13 @@ export type CloudinaryUploadResult = {
   secureUrl: string;
 };
 
+/** Query `context` en `POST /cloudinary/upload` (carpetas en Cloudinary). */
+export type CloudinaryUploadContext =
+  | 'dreams'
+  | 'characters'
+  | 'locations'
+  | 'objects';
+
 function extForMime(mime: string | undefined): string {
   switch (mime) {
     case 'image/png':
@@ -41,34 +48,38 @@ async function ensureLocalFileUri(asset: ImagePickerAsset): Promise<string> {
   return dest;
 }
 
-async function uploadViaFormDataWeb(asset: ImagePickerAsset): Promise<string> {
+async function uploadViaFormDataWeb(
+  asset: ImagePickerAsset,
+  context: CloudinaryUploadContext,
+): Promise<string> {
   const res = await fetch(asset.uri);
   const blob = await res.blob();
   const formData = new FormData();
   formData.append('file', blob, asset.fileName ?? 'dream.jpg');
   const raw = await postFormData<CloudinaryUploadResult>(
-    '/cloudinary/upload?context=dreams',
+    `/cloudinary/upload?context=${encodeURIComponent(context)}`,
     formData,
   );
   return raw.secureUrl;
 }
 
 /**
- * Sube una imagen al backend (`POST /cloudinary/upload?context=dreams`), que la reenvía a Cloudinary.
- * Devuelve la URL segura para guardar en `dreamImages[]`.
+ * Sube una imagen al backend (`POST /cloudinary/upload`), que la reenvía a Cloudinary.
+ * `context` define la carpeta (`dreams` por defecto; catálogo: `characters` | `locations` | `objects`).
  */
 export async function uploadDreamImageToCloudinary(
   asset: ImagePickerAsset,
+  context: CloudinaryUploadContext = 'dreams',
 ): Promise<string> {
   const mime = asset.mimeType ?? 'image/jpeg';
 
   if (Platform.OS === 'web') {
-    return uploadViaFormDataWeb(asset);
+    return uploadViaFormDataWeb(asset, context);
   }
 
   const localUri = await ensureLocalFileUri(asset);
   const base = API_BASE_URL.replace(/\/+$/, '');
-  const url = `${base}/cloudinary/upload?context=dreams`;
+  const url = `${base}/cloudinary/upload?context=${encodeURIComponent(context)}`;
 
   const result = await FileSystem.uploadAsync(url, localUri, {
     httpMethod: 'POST',
