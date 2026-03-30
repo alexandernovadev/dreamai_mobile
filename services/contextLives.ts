@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { DreamAppearances } from './dreamAppearances';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 export type ContextLife = {
@@ -52,11 +53,11 @@ export const contextLivesService = {
     return revive(raw);
   },
 
-  async getOne(id: string): Promise<ContextLife> {
-    const raw = await api.get<ApiContextLife>(
+  async getOne(id: string): Promise<ContextLife & { dreamAppearances?: DreamAppearances }> {
+    const raw = await api.get<ApiContextLife & { dreamAppearances?: DreamAppearances }>(
       `/context-lives/${encodeURIComponent(id)}`,
     );
-    return revive(raw);
+    return { ...revive(raw), dreamAppearances: raw.dreamAppearances };
   },
 
   async update(id: string, input: UpdateContextLifeInput): Promise<ContextLife> {

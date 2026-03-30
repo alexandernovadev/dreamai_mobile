@@ -1,51 +1,129 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { SignalsEntityCard } from '@/components/signals/SignalsEntityCard';
+import { SignalsEntityCardShell } from '@/components/signals/SignalsEntityCardShell';
+import { SignalsSection } from '@/components/signals/SignalsSection';
+import {
+  loadAllSignalHubSections,
+  type SignalHubCardItem,
+} from '@/services/signalsHub';
+import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
+import { colors, gradients, spacing, typography } from '@/theme';
 
+const CARDS_PER_SECTION = 5;
+
+type HubState = Record<
+  SignalEntityListSlug,
+  { items: SignalHubCardItem[]; error: string | null }
+> | null;
+
+/**
+ * Signals hub — catalog previews (5 per entity, sorted by updatedAt) + appearance counts.
+ * "See all" → `/entity-list/[slug]` (stub until step 3 lists).
+ */
 export default function SignalsScreen() {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [hub, setHub] = useState<HubState>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await loadAllSignalHubSections();
+      setHub(data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   return (
     <LinearGradient
       colors={[...bg.colors]}
       start={bg.start}
       end={bg.end}
-      style={s.root}
+      style={styles.root}
     >
-      <View style={[s.safe, { paddingTop: insets.top }]}>
-        <View style={s.header}>
-          <Text style={s.title}>Señales</Text>
-          <View style={s.subtitleRow}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Signals</Text>
+          <View style={styles.subtitleRow}>
             <Ionicons name="radio-outline" size={14} color={colors.textMuted} />
-            <Text style={s.subtitle}>Patrones y símbolos recurrentes</Text>
+            <Text style={styles.subtitle}>
+              Recurring figures, places, and threads
+            </Text>
           </View>
         </View>
 
-        <View style={s.emptyCenter}>
-          <View style={s.emptyIconWrap}>
-            <Ionicons name="analytics-outline" size={56} color={colors.accentMuted} />
-          </View>
-          <Text style={s.emptyTitle}>Sin señales aún</Text>
-          <Text style={s.emptyDesc}>
-            A medida que registres y refines tus sueños, aquí aparecerán personajes, objetos y lugares recurrentes.
-          </Text>
-          <View style={s.emptyChip}>
-            <Ionicons name="construct-outline" size={14} color={colors.accent} />
-            <Text style={s.emptyChipText}>Próximamente</Text>
-          </View>
-        </View>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {SIGNAL_ENTITY_SECTIONS.map((section) => {
+            const slug = section.listSlug;
+            const block = hub?.[slug];
+            const error = block?.error ?? null;
+            const items = block?.items ?? [];
+
+            return (
+              <SignalsSection
+                key={slug}
+                title={section.title}
+                onSeeAll={() => router.push(`/entity-list/${slug}`)}
+              >
+                {error ? (
+                  <View style={styles.inlineMessage}>
+                    <Ionicons name="warning-outline" size={18} color={colors.warning} />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.carousel}
+                  >
+                    {loading
+                      ? Array.from({ length: CARDS_PER_SECTION }, (_, i) => (
+                          <SignalsEntityCardShell key={i} />
+                        ))
+                      : items.length === 0
+                        ? (
+                            <View style={styles.emptyStrip}>
+                              <Text style={styles.emptyText}>No entries yet</Text>
+                            </View>
+                          )
+                        : items.map((item) => (
+                            <SignalsEntityCard
+                              key={item.id}
+                              sectionSlug={slug}
+                              item={item}
+                            />
+                          ))}
+                  </ScrollView>
+                )}
+              </SignalsSection>
+            );
+          })}
+        </ScrollView>
       </View>
     </LinearGradient>
   );
 }
 
-const s = StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: spacing.xl },
-
   header: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
@@ -65,51 +143,42 @@ const s = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
   },
-
-  emptyCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
+  scroll: { flex: 1 },
+  scrollContent: {
     paddingBottom: spacing.xxxl,
   },
-  emptyIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(124, 92, 196, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  emptyDesc: {
-    fontSize: typography.sizes.md,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyChip: {
+  carousel: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(124, 92, 196, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(124, 92, 196, 0.25)',
+    gap: spacing.md,
+    paddingRight: spacing.xl,
+    alignItems: 'stretch',
   },
-  emptyChipText: {
+  inlineMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: 'rgba(234, 179, 8, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.25)',
+  },
+  errorText: {
+    flex: 1,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.accent,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  emptyStrip: {
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    minHeight: 120,
+  },
+  emptyText: {
+    fontSize: typography.sizes.sm,
+    fontStyle: 'italic',
+    color: colors.textMuted,
   },
 });

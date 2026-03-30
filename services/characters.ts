@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { DreamAppearances } from './dreamAppearances';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 export type CharacterArchetype =
@@ -83,9 +84,11 @@ export const charactersService = {
     return revive(raw);
   },
 
-  async getOne(id: string): Promise<Character> {
-    const raw = await api.get<ApiCharacter>(`/characters/${encodeURIComponent(id)}`);
-    return revive(raw);
+  async getOne(id: string): Promise<Character & { dreamAppearances?: DreamAppearances }> {
+    const raw = await api.get<ApiCharacter & { dreamAppearances?: DreamAppearances }>(
+      `/characters/${encodeURIComponent(id)}`,
+    );
+    return { ...revive(raw), dreamAppearances: raw.dreamAppearances };
   },
 
   async update(id: string, input: UpdateCharacterInput): Promise<Character> {

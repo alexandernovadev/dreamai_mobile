@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { DreamAppearances } from './dreamAppearances';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 /** Alineado con `FeelingKind` del backend. */
@@ -86,9 +87,11 @@ export const feelingsService = {
     return revive(raw);
   },
 
-  async getOne(id: string): Promise<Feeling> {
-    const raw = await api.get<ApiFeeling>(`/feelings/${encodeURIComponent(id)}`);
-    return revive(raw);
+  async getOne(id: string): Promise<Feeling & { dreamAppearances?: DreamAppearances }> {
+    const raw = await api.get<ApiFeeling & { dreamAppearances?: DreamAppearances }>(
+      `/feelings/${encodeURIComponent(id)}`,
+    );
+    return { ...revive(raw), dreamAppearances: raw.dreamAppearances };
   },
 
   async update(id: string, input: UpdateFeelingInput): Promise<Feeling> {

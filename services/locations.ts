@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { DreamAppearances } from './dreamAppearances';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 export type LocationSetting = 'URBAN' | 'NATURE' | 'INDOOR' | 'ABSTRACT';
@@ -76,9 +77,11 @@ export const locationsService = {
     return revive(raw);
   },
 
-  async getOne(id: string): Promise<Location> {
-    const raw = await api.get<ApiLocation>(`/locations/${encodeURIComponent(id)}`);
-    return revive(raw);
+  async getOne(id: string): Promise<Location & { dreamAppearances?: DreamAppearances }> {
+    const raw = await api.get<ApiLocation & { dreamAppearances?: DreamAppearances }>(
+      `/locations/${encodeURIComponent(id)}`,
+    );
+    return { ...revive(raw), dreamAppearances: raw.dreamAppearances };
   },
 
   async update(id: string, input: UpdateLocationInput): Promise<Location> {

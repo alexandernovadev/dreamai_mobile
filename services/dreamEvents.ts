@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { DreamAppearances } from './dreamAppearances';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 export type DreamEvent = {
@@ -57,11 +58,11 @@ export const dreamEventsService = {
     return revive(raw);
   },
 
-  async getOne(id: string): Promise<DreamEvent> {
-    const raw = await api.get<ApiDreamEvent>(
+  async getOne(id: string): Promise<DreamEvent & { dreamAppearances?: DreamAppearances }> {
+    const raw = await api.get<ApiDreamEvent & { dreamAppearances?: DreamAppearances }>(
       `/dream-events/${encodeURIComponent(id)}`,
     );
-    return revive(raw);
+    return { ...revive(raw), dreamAppearances: raw.dreamAppearances };
   },
 
   async update(id: string, input: UpdateDreamEventInput): Promise<DreamEvent> {
