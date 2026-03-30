@@ -80,4 +80,9 @@ export const charactersService = {
     const raw = await api.post<ApiCharacter>('/characters', input);
     return revive(raw);
   },
+
+  async getOne(id: string): Promise<Character> {
+    const raw = await api.get<ApiCharacter>(`/characters/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
 };

@@ -73,4 +73,9 @@ export const locationsService = {
     const raw = await api.post<ApiLocation>('/locations', input);
     return revive(raw);
   },
+
+  async getOne(id: string): Promise<Location> {
+    const raw = await api.get<ApiLocation>(`/locations/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
 };

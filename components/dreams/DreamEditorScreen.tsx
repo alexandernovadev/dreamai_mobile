@@ -268,12 +268,19 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               </View>
             )}
 
-            {activeTab === 'elements' && (
-              <ElementsStep
-                sessionId={sessionId ?? ''}
-                onError={(message, kind) => setSaveError({ message, kind })}
-              />
-            )}
+            {draftSaved && sessionId ? (
+              <View
+                style={[
+                  styles.elementsPanel,
+                  activeTab !== 'elements' && styles.elementsPanelHidden,
+                ]}
+              >
+                <ElementsStep
+                  sessionId={sessionId}
+                  onError={(message, kind) => setSaveError({ message, kind })}
+                />
+              </View>
+            ) : null}
 
             {activeTab === 'detail' && (
               <View style={styles.placeholderWrap}>
@@ -402,6 +409,14 @@ const styles = StyleSheet.create({
   },
 
   content: { flex: 1, minHeight: 0 },
+  /** Mantiene montado el paso Elementos al cambiar de pestaña (no pierde chips). */
+  elementsPanel: {
+    flex: 1,
+    minHeight: 0,
+  },
+  elementsPanelHidden: {
+    display: 'none',
+  },
   draftColumn: {
     flex: 1,
     minHeight: 0,

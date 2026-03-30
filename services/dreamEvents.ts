@@ -54,4 +54,11 @@ export const dreamEventsService = {
     const raw = await api.post<ApiDreamEvent>('/dream-events', input);
     return revive(raw);
   },
+
+  async getOne(id: string): Promise<DreamEvent> {
+    const raw = await api.get<ApiDreamEvent>(
+      `/dream-events/${encodeURIComponent(id)}`,
+    );
+    return revive(raw);
+  },
 };

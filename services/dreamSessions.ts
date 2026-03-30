@@ -16,6 +16,8 @@ export type DreamSession = {
   dreamImages: string[];
   userThought?: string;
   aiSummarize?: string;
+  /** Viene del servidor; necesario para hidratar el paso Elementos. */
+  analysis?: DreamAnalysisInput;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -29,6 +31,7 @@ type ApiDreamSession = {
   dreamImages?: string[];
   userThought?: string;
   aiSummarize?: string;
+  analysis?: DreamAnalysisInput;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -43,6 +46,7 @@ function revive(dto: ApiDreamSession): DreamSession {
     dreamImages: dto.dreamImages ?? [],
     userThought: dto.userThought,
     aiSummarize: dto.aiSummarize,
+    analysis: dto.analysis,
     createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
     updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : undefined,
   };

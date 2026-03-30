@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -38,10 +38,8 @@ import {
 } from '@/components/ui';
 import type { ChipVariant } from '@/components/ui/Chip';
 import { colors, radius, spacing, typography } from '@/theme';
-
-function newKey(): string {
-  return `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
+import { entityRefId } from '@/utils/entityRef';
+import { newKey } from '@/utils/key';
 
 const ARCHETYPE_SELECT: SelectOption[] = CHARACTER_ARCHETYPE_OPTIONS.map(
   (o) => ({ value: o.value, label: o.label }),
@@ -113,6 +111,9 @@ type Props = {
 };
 
 export function ElementsStep({ sessionId, onSaved, onError }: Props) {
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   const [saving, setSaving] = useState(false);
 
   const [characters, setCharacters] = useState<CharRow[]>([]);
@@ -143,6 +144,143 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   const [loadEv, setLoadEv] = useState(false);
 
   const [createModal, setCreateModal] = useState<CreateModal>(null);
+  const [hydrating, setHydrating] = useState(false);
+
+  useEffect(() => {
+    const sid = sessionId?.trim();
+    if (!sid) return;
+
+    let cancelled = false;
+    setHydrating(true);
+
+    void (async () => {
+      try {
+        const session = await dreamSessionsService.getOne(sid);
+        const entities = session.analysis?.entities;
+        if (!entities) {
+          if (!cancelled) {
+            setCharacters([]);
+            setLocations([]);
+            setObjects([]);
+            setContextRows([]);
+            setEvents([]);
+            setFeelings([]);
+          }
+          return;
+        }
+
+        const charRows: CharRow[] = [];
+        for (const r of entities.characters ?? []) {
+          const id = entityRefId(r.characterId);
+          if (!id) continue;
+          try {
+            const c = await charactersService.getOne(id);
+            if (!cancelled) {
+              charRows.push({ key: newKey(), t: 'existing', id: c.id, name: c.name });
+            }
+          } catch {
+            /* catálogo borrado o id inválido */
+          }
+        }
+
+        const locRows: LocRow[] = [];
+        for (const r of entities.locations ?? []) {
+          const id = entityRefId(r.locationId);
+          if (!id) continue;
+          try {
+            const x = await locationsService.getOne(id);
+            if (!cancelled) {
+              locRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
+        const objRows: ObjRow[] = [];
+        for (const r of entities.objects ?? []) {
+          const id = entityRefId(r.objectId);
+          if (!id) continue;
+          try {
+            const x = await dreamObjectsService.getOne(id);
+            if (!cancelled) {
+              objRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
+        const ctxRows: CtxRow[] = [];
+        for (const r of entities.contextLife ?? []) {
+          const id = entityRefId(r.contextLifeId);
+          if (!id) continue;
+          try {
+            const x = await contextLivesService.getOne(id);
+            if (!cancelled) {
+              ctxRows.push({ key: newKey(), t: 'existing', id: x.id, title: x.title });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
+        const evRows: EventRow[] = [];
+        for (const r of entities.events ?? []) {
+          const id = entityRefId(r.eventId);
+          if (!id) continue;
+          try {
+            const x = await dreamEventsService.getOne(id);
+            if (!cancelled) {
+              evRows.push({ key: newKey(), t: 'existing', id: x.id, label: x.label });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
+        const feelRows: FeelingRow[] = [];
+        for (const r of entities.feelings ?? []) {
+          const id = entityRefId(r.feelingId);
+          if (!id) continue;
+          try {
+            const x = await feelingsService.getOne(id);
+            if (!cancelled) {
+              feelRows.push({
+                key: newKey(),
+                kind: x.kind,
+                intensity: x.intensity,
+                notes: x.notes,
+              });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
+        if (!cancelled) {
+          setCharacters(charRows);
+          setLocations(locRows);
+          setObjects(objRows);
+          setContextRows(ctxRows);
+          setEvents(evRows);
+          setFeelings(feelRows);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          const msg = apiErrorMessage(e);
+          const kind = e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+          onErrorRef.current(msg, kind);
+        }
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const charIds = useMemo(() => {
     const ids: string[] = [];
@@ -511,6 +649,10 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           paso aparte.
         </Text>
 
+        {hydrating ? (
+          <ActivityIndicator color={colors.accent} style={styles.loader} />
+        ) : null}
+
         <SearchBlock
           title="Personajes"
           chipVariant="purple"
@@ -633,9 +775,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         <Button
           variant="purple"
           onPress={() => void handleSave()}
-          disabled={saving}
+          disabled={saving || hydrating}
         >
-          {saving ? 'Guardando…' : 'Guardar elementos'}
+          {saving ? 'Guardando…' : hydrating ? 'Cargando lista…' : 'Guardar elementos'}
         </Button>
       </KeyboardAvoidingScroll>
 

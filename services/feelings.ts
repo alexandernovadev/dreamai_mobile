@@ -83,6 +83,11 @@ export const feelingsService = {
     const raw = await api.post<ApiFeeling>('/feelings', input);
     return revive(raw);
   },
+
+  async getOne(id: string): Promise<Feeling> {
+    const raw = await api.get<ApiFeeling>(`/feelings/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
 };
 
 /** Opciones para `Select` (etiquetas en español, alineadas al back). */

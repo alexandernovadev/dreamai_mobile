@@ -49,4 +49,11 @@ export const contextLivesService = {
     const raw = await api.post<ApiContextLife>('/context-lives', input);
     return revive(raw);
   },
+
+  async getOne(id: string): Promise<ContextLife> {
+    const raw = await api.get<ApiContextLife>(
+      `/context-lives/${encodeURIComponent(id)}`,
+    );
+    return revive(raw);
+  },
 };
