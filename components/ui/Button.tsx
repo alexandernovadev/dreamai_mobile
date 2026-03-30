@@ -23,6 +23,7 @@ import {
   spacing,
   typography,
   type ButtonGradientVariant,
+  type ButtonVariant,
 } from '@/theme';
 
 const darkLabelSet = new Set<ButtonGradientVariant>([...buttonDarkLabelVariants]);
@@ -47,20 +48,23 @@ const PRESSED_TRANSLATE_Y = 2;
 
 type Props = Omit<PressableProps, 'children'> & {
   children: string;
-  variant?: ButtonGradientVariant;
+  variant?: ButtonVariant;
+  compact?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
 export function Button({
   children,
   variant = 'yellow',
+  compact = false,
   disabled,
   style,
   onPressIn,
   onPressOut,
   ...pressableProps
 }: Props) {
-  const g = buttonGradients[variant];
+  const isOutline = variant === 'outline';
+  const g = isOutline ? null : buttonGradients[variant];
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
 
@@ -97,24 +101,53 @@ export function Button({
       {...pressableProps}
       style={[disabled && styles.disabled, style]}
     >
-      <Animated.View style={[styles.glowOuter, glowOuterElevation, animatedStyle]}>
-        <View style={styles.innerBorder}>
-          <LinearGradient
-            colors={[...g.colors]}
-            start={g.start}
-            end={g.end}
-            style={styles.gradient}
+      <Animated.View
+        style={[
+          styles.glowOuter,
+          !isOutline && glowOuterElevation,
+          animatedStyle,
+        ]}
+      >
+        {isOutline ? (
+          <View
+            style={[
+              styles.outlineInner,
+              compact && styles.outlineInnerCompact,
+            ]}
           >
             <Text
               style={[
                 styles.label,
-                darkLabelSet.has(variant) && styles.labelOnDark,
+                compact && styles.labelCompact,
+                styles.labelOutline,
               ]}
             >
               {children}
             </Text>
-          </LinearGradient>
-        </View>
+          </View>
+        ) : (
+          g && (
+            <View style={styles.innerBorder}>
+              <LinearGradient
+                colors={[...g.colors]}
+                start={g.start}
+                end={g.end}
+                style={[styles.gradient, compact && styles.gradientCompact]}
+              >
+                <Text
+                  style={[
+                    styles.label,
+                    compact && styles.labelCompact,
+                    darkLabelSet.has(variant as ButtonGradientVariant) &&
+                      styles.labelOnDark,
+                  ]}
+                >
+                  {children}
+                </Text>
+              </LinearGradient>
+            </View>
+          )
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -140,13 +173,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 48,
   },
+  gradientCompact: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+  },
   label: {
     color: colors.buttonLabel,
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.semibold,
     letterSpacing: 0.3,
   },
+  labelCompact: {
+    fontSize: typography.sizes.sm,
+  },
   labelOnDark: {
+    color: colors.text,
+  },
+  outlineInner: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.buttonOutlineBorder,
+    backgroundColor: 'transparent',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  outlineInnerCompact: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+  },
+  labelOutline: {
     color: colors.text,
   },
 });

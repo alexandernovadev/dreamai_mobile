@@ -1,4 +1,5 @@
 import { api } from './api';
+import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
 export type DreamSessionStatus =
   | 'DRAFT'
@@ -15,6 +16,8 @@ export type DreamSession = {
   dreamImages: string[];
   userThought?: string;
   aiSummarize?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 type ApiDreamSession = {
@@ -26,6 +29,8 @@ type ApiDreamSession = {
   dreamImages?: string[];
   userThought?: string;
   aiSummarize?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 function revive(dto: ApiDreamSession): DreamSession {
@@ -38,8 +43,22 @@ function revive(dto: ApiDreamSession): DreamSession {
     dreamImages: dto.dreamImages ?? [],
     userThought: dto.userThought,
     aiSummarize: dto.aiSummarize,
+    createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
+    updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : undefined,
   };
 }
+
+export type QueryDreamSessionsParams = {
+  page?: number;
+  limit?: number;
+  status?: DreamSessionStatus;
+  rawNarrative?: string;
+  dreamKind?: string;
+  timestampFrom?: string;
+  timestampTo?: string;
+  createdFrom?: string;
+  createdTo?: string;
+};
 
 export type CreateDreamSessionInput = {
   timestamp?: Date;
@@ -48,7 +67,25 @@ export type CreateDreamSessionInput = {
   dreamKind?: string[];
 };
 
-export type UpdateDreamSessionInput = Partial<CreateDreamSessionInput>;
+/** Refs que acepta el backend en `analysis.entities`. */
+export type DreamEntitiesRefs = {
+  characters?: { characterId: string }[];
+  locations?: { locationId: string }[];
+  objects?: { objectId: string }[];
+  events?: { eventId: string }[];
+  contextLife?: { contextLifeId: string }[];
+  feelings?: { feelingId: string }[];
+};
+
+export type DreamAnalysisInput = {
+  perspectives?: string[];
+  lucidityLevel?: number;
+  entities?: DreamEntitiesRefs;
+};
+
+export type UpdateDreamSessionInput = Partial<CreateDreamSessionInput> & {
+  analysis?: DreamAnalysisInput;
+};
 
 function stripCreate(
   input: CreateDreamSessionInput,
@@ -73,10 +110,27 @@ function stripUpdate(
   if (input.status !== undefined) out.status = input.status;
   if (input.rawNarrative !== undefined) out.rawNarrative = input.rawNarrative;
   if (input.dreamKind !== undefined) out.dreamKind = input.dreamKind;
+  if (input.analysis !== undefined) out.analysis = input.analysis;
   return out;
 }
 
 export const dreamSessionsService = {
+  async getOne(id: string): Promise<DreamSession> {
+    const raw = await api.get<ApiDreamSession>(`/dream-sessions/${id}`);
+    return revive(raw);
+  },
+
+  async list(params: QueryDreamSessionsParams = {}): Promise<Paginated<DreamSession>> {
+    const raw = await api.get<{
+      data: ApiDreamSession[];
+      meta: PaginatedMeta;
+    }>(`/dream-sessions${buildQuery(params)}`);
+    return {
+      data: raw.data.map(revive),
+      meta: raw.meta,
+    };
+  },
+
   async create(input: CreateDreamSessionInput): Promise<DreamSession> {
     const raw = await api.post<ApiDreamSession>(
       '/dream-sessions',

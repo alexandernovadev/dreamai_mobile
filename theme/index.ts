@@ -14,6 +14,7 @@ export {
 export type {
   BadgeVariant,
   ButtonGradientVariant,
+  ButtonVariant,
   ThemeColors,
   ThemeGradients,
 } from './tokens';

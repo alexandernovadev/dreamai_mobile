@@ -6,4 +6,43 @@ export {
   type DreamSessionStatus,
   type CreateDreamSessionInput,
   type UpdateDreamSessionInput,
+  type DreamAnalysisInput,
+  type DreamEntitiesRefs,
+  type QueryDreamSessionsParams,
 } from './dreamSessions';
+export {
+  charactersService,
+  type Character,
+  type CharacterArchetype,
+  type CreateCharacterInput,
+  CHARACTER_ARCHETYPE_OPTIONS,
+} from './characters';
+export {
+  locationsService,
+  type Location,
+  type LocationSetting,
+  type CreateLocationInput,
+  LOCATION_SETTING_OPTIONS,
+} from './locations';
+export {
+  dreamObjectsService,
+  type DreamObject,
+  type CreateDreamObjectInput,
+} from './dreamObjects';
+export {
+  contextLivesService,
+  type ContextLife,
+  type CreateContextLifeInput,
+} from './contextLives';
+export {
+  dreamEventsService,
+  type DreamEvent,
+  type CreateDreamEventInput,
+} from './dreamEvents';
+export {
+  feelingsService,
+  type Feeling,
+  type FeelingKind,
+  type CreateFeelingInput,
+  FEELING_KIND_OPTIONS,
+} from './feelings';

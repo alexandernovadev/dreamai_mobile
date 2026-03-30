@@ -1,0 +1,24 @@
+/** Query string para `GET` (valores vacíos se omiten). */
+export function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === '') continue;
+    sp.set(k, String(v));
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : '';
+}
+
+export type PaginatedMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type Paginated<T> = {
+  data: T[];
+  meta: PaginatedMeta;
+};

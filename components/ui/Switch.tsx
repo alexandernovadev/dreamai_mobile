@@ -29,11 +29,12 @@ export function Switch({
     <View style={[styles.container, disabled && styles.disabled, containerStyle]}>
       <View style={[styles.row, !label && styles.rowSwitchOnly]}>
         {label ? (
-          <Text style={styles.label} numberOfLines={2}>
+          <Text style={styles.label} numberOfLines={3}>
             {label}
           </Text>
         ) : null}
         <RNSwitch
+          style={styles.switchNative}
           value={value}
           onValueChange={onValueChange}
           disabled={disabled}
@@ -67,8 +68,12 @@ const styles = StyleSheet.create({
   rowSwitchOnly: {
     justifyContent: 'flex-end',
   },
+  switchNative: {
+    flexShrink: 0,
+  },
   label: {
     flex: 1,
+    minWidth: 0,
     color: colors.text,
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.medium,

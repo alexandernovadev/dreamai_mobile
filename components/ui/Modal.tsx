@@ -2,9 +2,11 @@ import type { ReactNode } from 'react';
 import {
   Modal as RNModal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './Button';
@@ -15,8 +17,10 @@ export type ModalProps = {
   onClose: () => void;
   title?: string;
   children: ReactNode;
-  /** Texto del botón principal (cierra el modal). */
   closeLabel?: string;
+  primaryLabel?: string;
+  onPrimaryPress?: () => void;
+  primaryDisabled?: boolean;
 };
 
 export function Modal({
@@ -25,8 +29,13 @@ export function Modal({
   title,
   children,
   closeLabel = 'Cerrar',
+  primaryLabel,
+  onPrimaryPress,
+  primaryDisabled = false,
 }: ModalProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const bodyMaxHeight = Math.round(windowHeight * 0.52);
 
   return (
     <RNModal
@@ -48,10 +57,39 @@ export function Modal({
           ]}
         >
           {title ? <Text style={styles.title}>{title}</Text> : null}
-          <View style={styles.body}>{children}</View>
-          <Button variant="purple" onPress={onClose}>
-            {closeLabel}
-          </Button>
+          <ScrollView
+            style={{ maxHeight: bodyMaxHeight }}
+            contentContainerStyle={styles.body}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+          >
+            {children}
+          </ScrollView>
+          {primaryLabel != null && onPrimaryPress != null ? (
+            <View style={styles.footerRow}>
+              <Button
+                variant="outline"
+                compact
+                onPress={onClose}
+                style={styles.footerBtn}
+              >
+                {closeLabel}
+              </Button>
+              <Button
+                variant="purple"
+                compact
+                disabled={primaryDisabled}
+                onPress={onPrimaryPress}
+                style={styles.footerBtn}
+              >
+                {primaryLabel}
+              </Button>
+            </View>
+          ) : (
+            <Button variant="purple" onPress={onClose}>
+              {closeLabel}
+            </Button>
+          )}
         </View>
       </View>
     </RNModal>
@@ -83,5 +121,14 @@ const styles = StyleSheet.create({
   },
   body: {
     gap: spacing.sm,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  footerBtn: {
+    flex: 1,
+    minWidth: 100,
   },
 });

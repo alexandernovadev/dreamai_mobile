@@ -21,6 +21,8 @@ export const colors = {
   buttonLabel: '#1a1520',
   /** Borde morado oscuro (sin blanco) */
   buttonBorder: 'rgba(72, 48, 118, 0.85)',
+  /** Borde botón outline — blanco morado claro */
+  buttonOutlineBorder: palette.purple[100],
   /** Halo suave — mismo acento morado */
   buttonGlow: '#3d2868',
   /** Brand / interactive */
@@ -216,4 +218,5 @@ export const typography = {
 export type ThemeColors = typeof colors;
 export type ThemeGradients = typeof gradients;
 export type ButtonGradientVariant = keyof typeof buttonGradients;
+export type ButtonVariant = ButtonGradientVariant | 'outline';
 export type BadgeVariant = keyof typeof badgeGradients;
