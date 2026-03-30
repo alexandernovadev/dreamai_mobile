@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import type { ChipVariant } from '@/components/ui/Chip';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
+import { SuccessBanner } from '@/components/ui/SuccessBanner';
+import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import {
   ApiError,
   apiErrorMessage,
@@ -76,6 +78,7 @@ export function DreamDetailForm({
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const [iosPickerOpen, setIosPickerOpen] = useState(false);
   const [androidStep, setAndroidStep] = useState<'idle' | 'date' | 'time'>(
@@ -180,6 +183,7 @@ export function DreamDetailForm({
         status: 'STRUCTURED',
       });
       onSaved?.(session);
+      showSuccessBanner('Detalle guardado');
     } catch (e) {
       const msg = apiErrorMessage(e);
       const kind =
@@ -188,7 +192,7 @@ export function DreamDetailForm({
     } finally {
       setSaving(false);
     }
-  }, [sessionId, ts, kinds, images, onError, onSaved]);
+  }, [sessionId, ts, kinds, images, onError, onSaved, showSuccessBanner]);
 
   return (
     <KeyboardAvoidingScroll
@@ -345,13 +349,16 @@ export function DreamDetailForm({
         )}
       </View>
 
-      <Button
-        variant="purple"
-        onPress={() => void handleSave()}
-        disabled={saving}
-      >
-        {saving ? 'Guardando…' : 'Guardar detalle'}
-      </Button>
+      <View style={styles.saveBlock}>
+        {successMsg ? <SuccessBanner message={successMsg} /> : null}
+        <Button
+          variant="purple"
+          onPress={() => void handleSave()}
+          disabled={saving}
+        >
+          {saving ? 'Guardando…' : 'Guardar detalle'}
+        </Button>
+      </View>
     </KeyboardAvoidingScroll>
   );
 }
@@ -361,6 +368,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: spacing.lg,
     paddingBottom: spacing.xxxl,
+  },
+  saveBlock: {
+    gap: spacing.md,
   },
   card: {
     borderRadius: radius.lg,

@@ -4,7 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
+import { SuccessBanner } from '@/components/ui/SuccessBanner';
 import { Textarea } from '@/components/ui/Textarea';
+import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import {
   ApiError,
   apiErrorMessage,
@@ -31,6 +33,7 @@ export function ThoughtStep({
 }: ThoughtStepProps) {
   const [text, setText] = useState(initialUserThought ?? '');
   const [saving, setSaving] = useState(false);
+  const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const trimmed = text.trim();
   const canSave = trimmed.length > 0;
@@ -50,6 +53,7 @@ export function ThoughtStep({
         status: 'THOUGHT',
       });
       onSaved?.(session);
+      showSuccessBanner('Reflexión guardada');
     } catch (e) {
       const msg = apiErrorMessage(e);
       const kind =
@@ -58,7 +62,7 @@ export function ThoughtStep({
     } finally {
       setSaving(false);
     }
-  }, [sessionId, text, onError, onSaved]);
+  }, [sessionId, text, onError, onSaved, showSuccessBanner]);
 
   return (
     <KeyboardAvoidingScroll
@@ -122,13 +126,16 @@ export function ThoughtStep({
         </Pressable>
       </View>
 
-      <Button
-        variant="purple"
-        onPress={() => void handleSave()}
-        disabled={saving || !canSave}
-      >
-        {saving ? 'Guardando…' : 'Guardar reflexión'}
-      </Button>
+      <View style={styles.saveBlock}>
+        {successMsg ? <SuccessBanner message={successMsg} /> : null}
+        <Button
+          variant="purple"
+          onPress={() => void handleSave()}
+          disabled={saving || !canSave}
+        >
+          {saving ? 'Guardando…' : 'Guardar reflexión'}
+        </Button>
+      </View>
     </KeyboardAvoidingScroll>
   );
 }
@@ -206,5 +213,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     color: 'rgba(255, 230, 180, 0.95)',
     letterSpacing: 0.4,
+  },
+  saveBlock: {
+    gap: spacing.md,
   },
 });

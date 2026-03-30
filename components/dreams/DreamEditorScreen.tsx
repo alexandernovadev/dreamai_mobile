@@ -7,7 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { SuccessBanner } from '@/components/ui/SuccessBanner';
 import { TextareaFullHeight } from '@/components/ui/TextareaFullHeight';
+import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
 import { ElementsStep } from '@/components/dreams/ElementsStep';
 import { ThoughtStep } from '@/components/dreams/ThoughtStep';
@@ -63,6 +65,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [detailKinds, setDetailKinds] = useState<string[]>([]);
   const [detailImages, setDetailImages] = useState<string[]>([]);
   const [userThought, setUserThought] = useState<string>('');
+  const { message: draftSuccessMsg, show: showDraftSuccess } = useSuccessBanner();
 
   useEffect(() => {
     if (mode !== 'edit' || !initialSessionId) {
@@ -137,6 +140,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setUserThought(created.userThought ?? '');
       }
       setDraftSaved(true);
+      showDraftSuccess('Borrador guardado');
     } catch (e) {
       const msg = apiErrorMessage(e);
       const kind =
@@ -271,6 +275,9 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                   error={draftError}
                 />
                 <View style={styles.draftFooter}>
+                  {draftSuccessMsg ? (
+                    <SuccessBanner message={draftSuccessMsg} />
+                  ) : null}
                   <Button
                     variant="purple"
                     onPress={() => void handleSaveDraft()}

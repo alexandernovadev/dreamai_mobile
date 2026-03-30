@@ -36,6 +36,8 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui';
+import { SuccessBanner } from '@/components/ui/SuccessBanner';
+import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import type { ChipVariant } from '@/components/ui/Chip';
 import { colors, radius, spacing, typography } from '@/theme';
 import { entityRefId } from '@/utils/entityRef';
@@ -123,6 +125,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   onErrorRef.current = onError;
 
   const [saving, setSaving] = useState(false);
+  const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const [characters, setCharacters] = useState<CharRow[]>([]);
   const [locations, setLocations] = useState<LocRow[]>([]);
@@ -642,6 +645,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         analysis: { entities },
       });
       onSaved?.();
+      showSuccessBanner('Elementos guardados');
     } catch (e) {
       const msg = apiErrorMessage(e);
       const kind = e instanceof ApiError && e.status === 0 ? 'network' : 'server';
@@ -801,13 +805,16 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           </Button>
         </View>
 
-        <Button
-          variant="purple"
-          onPress={() => void handleSave()}
-          disabled={saving || hydrating}
-        >
-          {saving ? 'Guardando…' : hydrating ? 'Cargando lista…' : 'Guardar elementos'}
-        </Button>
+        <View style={styles.saveBlock}>
+          {successMsg ? <SuccessBanner message={successMsg} /> : null}
+          <Button
+            variant="purple"
+            onPress={() => void handleSave()}
+            disabled={saving || hydrating}
+          >
+            {saving ? 'Guardando…' : hydrating ? 'Cargando lista…' : 'Guardar elementos'}
+          </Button>
+        </View>
       </KeyboardAvoidingScroll>
 
       <StepModals
@@ -2122,5 +2129,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textMuted,
     fontSize: typography.sizes.md,
+  },
+  saveBlock: {
+    gap: spacing.md,
   },
 });
