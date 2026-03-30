@@ -43,6 +43,10 @@ import { colors, radius, spacing, typography } from '@/theme';
 import { entityRefId } from '@/utils/entityRef';
 import { newKey } from '@/utils/key';
 
+
+/* TODO Estoy seguri qye este codigo es un esoagitasoo
+pero la AI lo hizo, y lo puedo optimizar mas 
+*/
 const ARCHETYPE_SELECT: SelectOption[] = CHARACTER_ARCHETYPE_OPTIONS.map(
   (o) => ({ value: o.value, label: o.label }),
 );
