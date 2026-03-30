@@ -873,13 +873,6 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Extrae personajes, lugares y el resto de elementos. Busca en tu catálogo o crea nuevos;
-          todo se guardará en el servidor al pulsar Guardar. Puedes pedir sugerencias desde la
-          narrativa: no sustituyen lo que ya guardaste; volver a pedir IA quita solo el último lote de
-          sugerencias aún no guardadas.
-        </Text>
-
         <View style={styles.aiRow}>
           <Button
             variant="outline"
@@ -2349,11 +2342,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing.xl,
     gap: spacing.lg,
-  },
-  intro: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
   },
   section: { gap: spacing.sm },
   sectionTitle: {
