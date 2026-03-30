@@ -37,6 +37,8 @@ export type CreateDreamObjectInput = {
   imageUri?: string;
 };
 
+export type UpdateDreamObjectInput = Partial<CreateDreamObjectInput>;
+
 export const dreamObjectsService = {
   async list(params: QueryDreamObjectsParams): Promise<Paginated<DreamObject>> {
     const raw = await api.get<{
@@ -57,6 +59,14 @@ export const dreamObjectsService = {
   async getOne(id: string): Promise<DreamObject> {
     const raw = await api.get<ApiDreamObject>(
       `/dream-objects/${encodeURIComponent(id)}`,
+    );
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateDreamObjectInput): Promise<DreamObject> {
+    const raw = await api.patch<ApiDreamObject>(
+      `/dream-objects/${encodeURIComponent(id)}`,
+      input,
     );
     return revive(raw);
   },

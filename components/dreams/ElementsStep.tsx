@@ -89,18 +89,26 @@ type EventRow =
 
 type FeelingRow = {
   key: string;
+  /** Presente cuando el sentimiento ya existe en el servidor (hidratar / tras guardar). */
+  id?: string;
   kind: FeelingKind;
   intensity?: number;
   notes?: string;
 };
 
-type CreateModal =
-  | { kind: 'character'; namePrefill: string }
-  | { kind: 'location'; namePrefill: string }
-  | { kind: 'object'; namePrefill: string }
-  | { kind: 'event'; namePrefill: string }
-  | { kind: 'context'; namePrefill: string }
-  | { kind: 'feeling' }
+type StepModal =
+  | { kind: 'character'; mode: 'create'; namePrefill: string }
+  | { kind: 'character'; mode: 'edit'; row: CharRow }
+  | { kind: 'location'; mode: 'create'; namePrefill: string }
+  | { kind: 'location'; mode: 'edit'; row: LocRow }
+  | { kind: 'object'; mode: 'create'; namePrefill: string }
+  | { kind: 'object'; mode: 'edit'; row: ObjRow }
+  | { kind: 'context'; mode: 'create'; namePrefill: string }
+  | { kind: 'context'; mode: 'edit'; row: CtxRow }
+  | { kind: 'event'; mode: 'create'; namePrefill: string }
+  | { kind: 'event'; mode: 'edit'; row: EventRow }
+  | { kind: 'feeling'; mode: 'create' }
+  | { kind: 'feeling'; mode: 'edit'; row: FeelingRow }
   | null;
 
 type Props = {
@@ -143,7 +151,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   const [sugEv, setSugEv] = useState<{ id: string; label: string }[]>([]);
   const [loadEv, setLoadEv] = useState(false);
 
-  const [createModal, setCreateModal] = useState<CreateModal>(null);
+  const [stepModal, setStepModal] = useState<StepModal>(null);
   const [hydrating, setHydrating] = useState(false);
 
   useEffect(() => {
@@ -248,6 +256,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             if (!cancelled) {
               feelRows.push({
                 key: newKey(),
+                id: x.id,
                 kind: x.kind,
                 intensity: x.intensity,
                 notes: x.notes,
@@ -595,15 +604,29 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
       }
 
       const feelingIds: string[] = [];
+      const nextFeelings: FeelingRow[] = [];
       for (const row of feelings) {
-        const c = await feelingsService.create({
-          kind: row.kind,
-          dreamSessionId: sessionId,
-          intensity: row.intensity,
-          notes: row.notes?.trim() || undefined,
-        });
-        feelingIds.push(c.id);
+        if (row.id) {
+          await feelingsService.update(row.id, {
+            kind: row.kind,
+            dreamSessionId: sessionId,
+            intensity: row.intensity,
+            notes: row.notes?.trim() || undefined,
+          });
+          feelingIds.push(row.id);
+          nextFeelings.push(row);
+        } else {
+          const c = await feelingsService.create({
+            kind: row.kind,
+            dreamSessionId: sessionId,
+            intensity: row.intensity,
+            notes: row.notes?.trim() || undefined,
+          });
+          feelingIds.push(c.id);
+          nextFeelings.push({ ...row, id: c.id });
+        }
       }
+      setFeelings(nextFeelings);
 
       const entities = {
         characters: [...new Set(characterIds)].map((id) => ({ characterId: id })),
@@ -663,11 +686,12 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           loading={loadChar}
           onPick={addChar}
           onCreate={() =>
-            setCreateModal({ kind: 'character', namePrefill: qChar.trim() })
+            setStepModal({ kind: 'character', mode: 'create', namePrefill: qChar.trim() })
           }
           entries={characters.map((r) => ({
             key: r.key,
             label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            onEdit: () => setStepModal({ kind: 'character', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setCharacters((p) => p.filter((r) => r.key !== key))}
         />
@@ -682,11 +706,12 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           loading={loadLoc}
           onPick={addLoc}
           onCreate={() =>
-            setCreateModal({ kind: 'location', namePrefill: qLoc.trim() })
+            setStepModal({ kind: 'location', mode: 'create', namePrefill: qLoc.trim() })
           }
           entries={locations.map((r) => ({
             key: r.key,
             label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            onEdit: () => setStepModal({ kind: 'location', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setLocations((p) => p.filter((r) => r.key !== key))}
         />
@@ -701,11 +726,12 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           loading={loadObj}
           onPick={addObj}
           onCreate={() =>
-            setCreateModal({ kind: 'object', namePrefill: qObj.trim() })
+            setStepModal({ kind: 'object', mode: 'create', namePrefill: qObj.trim() })
           }
           entries={objects.map((r) => ({
             key: r.key,
             label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            onEdit: () => setStepModal({ kind: 'object', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setObjects((p) => p.filter((r) => r.key !== key))}
         />
@@ -720,11 +746,12 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           loading={loadCtx}
           onPick={addCtx}
           onCreate={() =>
-            setCreateModal({ kind: 'context', namePrefill: qCtx.trim() })
+            setStepModal({ kind: 'context', mode: 'create', namePrefill: qCtx.trim() })
           }
           entries={contextRows.map((r) => ({
             key: r.key,
             label: r.t === 'existing' ? r.title : `${r.title} (nuevo)`,
+            onEdit: () => setStepModal({ kind: 'context', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setContextRows((p) => p.filter((r) => r.key !== key))}
         />
@@ -739,11 +766,12 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           loading={loadEv}
           onPick={addEv}
           onCreate={() =>
-            setCreateModal({ kind: 'event', namePrefill: qEv.trim() })
+            setStepModal({ kind: 'event', mode: 'create', namePrefill: qEv.trim() })
           }
           entries={events.map((r) => ({
             key: r.key,
             label: r.t === 'existing' ? r.label : `${r.label} (nuevo)`,
+            onEdit: () => setStepModal({ kind: 'event', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setEvents((p) => p.filter((r) => r.key !== key))}
         />
@@ -762,12 +790,13 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
                   key={f.key}
                   label={f.intensity != null ? `${label} (${f.intensity})` : label}
                   variant="rose"
+                  onEdit={() => setStepModal({ kind: 'feeling', mode: 'edit', row: f })}
                   onRemove={() => setFeelings((p) => p.filter((x) => x.key !== f.key))}
                 />
               );
             })}
           </View>
-          <Button variant="purple" onPress={() => setCreateModal({ kind: 'feeling' })}>
+          <Button variant="purple" onPress={() => setStepModal({ kind: 'feeling', mode: 'create' })}>
             + Añadir sentimiento
           </Button>
         </View>
@@ -781,9 +810,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         </Button>
       </KeyboardAvoidingScroll>
 
-      <CreateModals
-        modal={createModal}
-        onClose={() => setCreateModal(null)}
+      <StepModals
+        modal={stepModal}
+        sessionId={sessionId}
+        onClose={() => setStepModal(null)}
+        onError={onError}
         onAddCharacter={(row) => {
           setCharacters((p) => [
             ...p,
@@ -796,8 +827,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
               archetype: row.archetype,
             },
           ]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateCharacter={(next) =>
+          setCharacters((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
         onAddLocation={(row) => {
           setLocations((p) => [
             ...p,
@@ -810,8 +844,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
               setting: row.setting,
             },
           ]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateLocation={(next) =>
+          setLocations((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
         onAddObject={(row) => {
           setObjects((p) => [
             ...p,
@@ -822,8 +859,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
               description: row.description,
             },
           ]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateObject={(next) =>
+          setObjects((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
         onAddEvent={(row) => {
           setEvents((p) => [
             ...p,
@@ -834,8 +874,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
               description: row.description,
             },
           ]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateEvent={(next) =>
+          setEvents((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
         onAddContext={(row) => {
           setContextRows((p) => [
             ...p,
@@ -846,12 +889,18 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
               description: row.description,
             },
           ]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateContext={(next) =>
+          setContextRows((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
         onAddFeeling={(row) => {
           setFeelings((p) => [...p, { key: newKey(), ...row }]);
-          setCreateModal(null);
+          setStepModal(null);
         }}
+        onUpdateFeeling={(next) =>
+          setFeelings((p) => p.map((r) => (r.key === next.key ? next : r)))
+        }
       />
     </View>
   );
@@ -867,7 +916,7 @@ function SearchBlock(props: {
   loading: boolean;
   onPick: (id: string, label: string) => void;
   onCreate: () => void;
-  entries: { key: string; label: string }[];
+  entries: { key: string; label: string; onEdit?: () => void }[];
   onRemove: (key: string) => void;
 }) {
   const {
@@ -926,6 +975,7 @@ function SearchBlock(props: {
             key={e.key}
             label={e.label}
             variant={chipVariant}
+            onEdit={e.onEdit}
             onRemove={() => onRemove(e.key)}
           />
         ))}
@@ -934,94 +984,189 @@ function SearchBlock(props: {
   );
 }
 
-function CreateModals(props: {
-  modal: CreateModal;
+function StepModals(props: {
+  modal: StepModal;
+  sessionId: string;
   onClose: () => void;
+  onError: (message: string, kind: 'network' | 'server') => void;
   onAddCharacter: (row: {
     name: string;
     description: string;
     isKnown: boolean;
     archetype: CharacterArchetype;
   }) => void;
+  onUpdateCharacter: (next: CharRow) => void;
   onAddLocation: (row: {
     name: string;
     description: string;
     isFamiliar: boolean;
     setting: LocationSetting;
   }) => void;
+  onUpdateLocation: (next: LocRow) => void;
   onAddObject: (row: { name: string; description?: string }) => void;
+  onUpdateObject: (next: ObjRow) => void;
   onAddEvent: (row: { label: string; description?: string }) => void;
+  onUpdateEvent: (next: EventRow) => void;
   onAddContext: (row: { title: string; description?: string }) => void;
+  onUpdateContext: (next: CtxRow) => void;
   onAddFeeling: (row: {
     kind: FeelingKind;
     intensity?: number;
     notes?: string;
   }) => void;
+  onUpdateFeeling: (next: FeelingRow) => void;
 }) {
   const {
     modal,
+    sessionId,
     onClose,
+    onError,
     onAddCharacter,
+    onUpdateCharacter,
     onAddLocation,
+    onUpdateLocation,
     onAddObject,
+    onUpdateObject,
     onAddEvent,
+    onUpdateEvent,
     onAddContext,
+    onUpdateContext,
     onAddFeeling,
+    onUpdateFeeling,
   } = props;
 
-  if (modal?.kind === 'character') {
+  const reportErr = useCallback(
+    (e: unknown) => {
+      const msg = apiErrorMessage(e);
+      const kind = e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+      onError(msg, kind);
+    },
+    [onError],
+  );
+
+  if (!modal) return null;
+
+  if (modal.kind === 'character') {
+    if (modal.mode === 'create') {
+      return (
+        <CharacterCreateModal
+          key={`char-${modal.namePrefill}`}
+          namePrefill={modal.namePrefill}
+          onClose={onClose}
+          onSubmit={onAddCharacter}
+        />
+      );
+    }
     return (
-      <CharacterCreateModal
-        key={`char-${modal.namePrefill}`}
-        namePrefill={modal.namePrefill}
+      <CharacterEditModal
+        key={`echar-${modal.row.key}`}
+        row={modal.row}
         onClose={onClose}
-        onSubmit={onAddCharacter}
+        onApplied={onUpdateCharacter}
+        onApiError={reportErr}
       />
     );
   }
-  if (modal?.kind === 'location') {
+  if (modal.kind === 'location') {
+    if (modal.mode === 'create') {
+      return (
+        <LocationCreateModal
+          key={`loc-${modal.namePrefill}`}
+          namePrefill={modal.namePrefill}
+          onClose={onClose}
+          onSubmit={onAddLocation}
+        />
+      );
+    }
     return (
-      <LocationCreateModal
-        key={`loc-${modal.namePrefill}`}
-        namePrefill={modal.namePrefill}
+      <LocationEditModal
+        key={`eloc-${modal.row.key}`}
+        row={modal.row}
         onClose={onClose}
-        onSubmit={onAddLocation}
+        onApplied={onUpdateLocation}
+        onApiError={reportErr}
       />
     );
   }
-  if (modal?.kind === 'object') {
+  if (modal.kind === 'object') {
+    if (modal.mode === 'create') {
+      return (
+        <ObjectCreateModal
+          key={`obj-${modal.namePrefill}`}
+          namePrefill={modal.namePrefill}
+          onClose={onClose}
+          onSubmit={onAddObject}
+        />
+      );
+    }
     return (
-      <ObjectCreateModal
-        key={`obj-${modal.namePrefill}`}
-        namePrefill={modal.namePrefill}
+      <ObjectEditModal
+        key={`eobj-${modal.row.key}`}
+        row={modal.row}
         onClose={onClose}
-        onSubmit={onAddObject}
+        onApplied={onUpdateObject}
+        onApiError={reportErr}
       />
     );
   }
-  if (modal?.kind === 'event') {
+  if (modal.kind === 'event') {
+    if (modal.mode === 'create') {
+      return (
+        <EventCreateModal
+          key={`ev-${modal.namePrefill}`}
+          namePrefill={modal.namePrefill}
+          onClose={onClose}
+          onSubmit={onAddEvent}
+        />
+      );
+    }
     return (
-      <EventCreateModal
-        key={`ev-${modal.namePrefill}`}
-        namePrefill={modal.namePrefill}
+      <EventEditModal
+        key={`eev-${modal.row.key}`}
+        row={modal.row}
+        sessionId={sessionId}
         onClose={onClose}
-        onSubmit={onAddEvent}
+        onApplied={onUpdateEvent}
+        onApiError={reportErr}
       />
     );
   }
-  if (modal?.kind === 'context') {
+  if (modal.kind === 'context') {
+    if (modal.mode === 'create') {
+      return (
+        <ContextCreateModal
+          key={`ctx-${modal.namePrefill}`}
+          namePrefill={modal.namePrefill}
+          onClose={onClose}
+          onSubmit={onAddContext}
+        />
+      );
+    }
     return (
-      <ContextCreateModal
-        key={`ctx-${modal.namePrefill}`}
-        namePrefill={modal.namePrefill}
+      <ContextEditModal
+        key={`ectx-${modal.row.key}`}
+        row={modal.row}
         onClose={onClose}
-        onSubmit={onAddContext}
+        onApplied={onUpdateContext}
+        onApiError={reportErr}
       />
     );
   }
-  if (modal?.kind === 'feeling') {
+  if (modal.kind === 'feeling') {
+    if (modal.mode === 'create') {
+      return (
+        <FeelingCreateModal key="feeling-new" onClose={onClose} onSubmit={onAddFeeling} />
+      );
+    }
     return (
-      <FeelingCreateModal key="feeling-new" onClose={onClose} onSubmit={onAddFeeling} />
+      <FeelingEditModal
+        key={`efeel-${modal.row.key}`}
+        row={modal.row}
+        sessionId={sessionId}
+        onClose={onClose}
+        onApplied={onUpdateFeeling}
+        onApiError={reportErr}
+      />
     );
   }
   return null;
@@ -1080,6 +1225,122 @@ function CharacterCreateModal({
   );
 }
 
+function CharacterEditModal({
+  row,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: CharRow;
+  onClose: () => void;
+  onApplied: (next: CharRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [loading, setLoading] = useState(row.t === 'existing');
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isKnown, setIsKnown] = useState(false);
+  const [archetype, setArchetype] = useState<CharacterArchetype | null>(null);
+
+  useEffect(() => {
+    if (row.t === 'new') {
+      setName(row.name);
+      setDescription(row.description);
+      setIsKnown(row.isKnown);
+      setArchetype(row.archetype);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void charactersService
+      .getOne(row.id)
+      .then((c) => {
+        if (cancelled) return;
+        setName(c.name);
+        setDescription(c.description);
+        setIsKnown(c.isKnown);
+        setArchetype(c.archetype);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onApiError(e);
+        onClose();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row, onApiError, onClose]);
+
+  const save = async () => {
+    const n = name.trim();
+    const d = description.trim();
+    if (!n || !d || !archetype) return;
+    if (row.t === 'existing') {
+      setSaving(true);
+      try {
+        await charactersService.update(row.id, {
+          name: n,
+          description: d,
+          isKnown,
+          archetype,
+        });
+        onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({
+        key: row.key,
+        t: 'new',
+        name: n,
+        description: d,
+        isKnown,
+        archetype,
+      });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title={row.t === 'existing' ? 'Editar personaje' : 'Editar borrador (personaje)'}
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={loading || saving || !archetype}
+      onPrimaryPress={() => void save()}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      ) : (
+        <>
+          <Input label="Nombre" value={name} onChangeText={setName} />
+          <Textarea label="Descripción" value={description} onChangeText={setDescription} />
+          <Switch
+            label="¿Te es conocido en la vida real?"
+            value={isKnown}
+            onValueChange={setIsKnown}
+          />
+          <Select
+            label="Arquetipo"
+            options={ARCHETYPE_SELECT}
+            value={archetype}
+            onValueChange={(v) => setArchetype(v as CharacterArchetype)}
+            placeholder="Arquetipo"
+            modalTitle="Arquetipo"
+          />
+        </>
+      )}
+    </Modal>
+  );
+}
+
 function LocationCreateModal({
   namePrefill,
   onClose,
@@ -1133,6 +1394,122 @@ function LocationCreateModal({
   );
 }
 
+function LocationEditModal({
+  row,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: LocRow;
+  onClose: () => void;
+  onApplied: (next: LocRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [loading, setLoading] = useState(row.t === 'existing');
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isFamiliar, setIsFamiliar] = useState(false);
+  const [setting, setSetting] = useState<LocationSetting | null>(null);
+
+  useEffect(() => {
+    if (row.t === 'new') {
+      setName(row.name);
+      setDescription(row.description);
+      setIsFamiliar(row.isFamiliar);
+      setSetting(row.setting);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void locationsService
+      .getOne(row.id)
+      .then((x) => {
+        if (cancelled) return;
+        setName(x.name);
+        setDescription(x.description);
+        setIsFamiliar(x.isFamiliar);
+        setSetting(x.setting);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onApiError(e);
+        onClose();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row, onApiError, onClose]);
+
+  const save = async () => {
+    const n = name.trim();
+    const d = description.trim();
+    if (!n || !d || !setting) return;
+    if (row.t === 'existing') {
+      setSaving(true);
+      try {
+        await locationsService.update(row.id, {
+          name: n,
+          description: d,
+          isFamiliar,
+          setting,
+        });
+        onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({
+        key: row.key,
+        t: 'new',
+        name: n,
+        description: d,
+        isFamiliar,
+        setting,
+      });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title={row.t === 'existing' ? 'Editar lugar' : 'Editar borrador (lugar)'}
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={loading || saving || !setting}
+      onPrimaryPress={() => void save()}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      ) : (
+        <>
+          <Input label="Nombre" value={name} onChangeText={setName} />
+          <Textarea label="Descripción" value={description} onChangeText={setDescription} />
+          <Switch
+            label="¿Te resulta familiar?"
+            value={isFamiliar}
+            onValueChange={setIsFamiliar}
+          />
+          <Select
+            label="Ambiente"
+            options={SETTING_SELECT}
+            value={setting}
+            onValueChange={(v) => setSetting(v as LocationSetting)}
+            placeholder="Ambiente"
+            modalTitle="Ambiente"
+          />
+        </>
+      )}
+    </Modal>
+  );
+}
+
 function ObjectCreateModal({
   namePrefill,
   onClose,
@@ -1167,6 +1544,95 @@ function ObjectCreateModal({
         value={description}
         onChangeText={setDescription}
       />
+    </Modal>
+  );
+}
+
+function ObjectEditModal({
+  row,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: ObjRow;
+  onClose: () => void;
+  onApplied: (next: ObjRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [loading, setLoading] = useState(row.t === 'existing');
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (row.t === 'new') {
+      setName(row.name);
+      setDescription(row.description ?? '');
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void dreamObjectsService
+      .getOne(row.id)
+      .then((x) => {
+        if (cancelled) return;
+        setName(x.name);
+        setDescription(x.description ?? '');
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onApiError(e);
+        onClose();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row, onApiError, onClose]);
+
+  const save = async () => {
+    const n = name.trim();
+    if (!n) return;
+    const d = description.trim() || undefined;
+    if (row.t === 'existing') {
+      setSaving(true);
+      try {
+        await dreamObjectsService.update(row.id, { name: n, description: d });
+        onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({ key: row.key, t: 'new', name: n, description: d });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title={row.t === 'existing' ? 'Editar objeto' : 'Editar borrador (objeto)'}
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={loading || saving}
+      onPrimaryPress={() => void save()}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      ) : (
+        <>
+          <Input label="Nombre" value={name} onChangeText={setName} />
+          <Textarea
+            label="Descripción (opcional)"
+            value={description}
+            onChangeText={setDescription}
+          />
+        </>
+      )}
     </Modal>
   );
 }
@@ -1209,6 +1675,101 @@ function EventCreateModal({
   );
 }
 
+function EventEditModal({
+  row,
+  sessionId,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: EventRow;
+  sessionId: string;
+  onClose: () => void;
+  onApplied: (next: EventRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [loading, setLoading] = useState(row.t === 'existing');
+  const [saving, setSaving] = useState(false);
+  const [label, setLabel] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (row.t === 'new') {
+      setLabel(row.label);
+      setDescription(row.description ?? '');
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void dreamEventsService
+      .getOne(row.id)
+      .then((x) => {
+        if (cancelled) return;
+        setLabel(x.label);
+        setDescription(x.description ?? '');
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onApiError(e);
+        onClose();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row, onApiError, onClose]);
+
+  const save = async () => {
+    const n = label.trim();
+    if (!n) return;
+    const d = description.trim() || undefined;
+    if (row.t === 'existing') {
+      setSaving(true);
+      try {
+        await dreamEventsService.update(row.id, {
+          label: n,
+          description: d,
+          dreamSessionId: sessionId,
+        });
+        onApplied({ key: row.key, t: 'existing', id: row.id, label: n });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({ key: row.key, t: 'new', label: n, description: d });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title={row.t === 'existing' ? 'Editar evento' : 'Editar borrador (evento)'}
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={loading || saving}
+      onPrimaryPress={() => void save()}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      ) : (
+        <>
+          <Input label="Etiqueta" value={label} onChangeText={setLabel} />
+          <Textarea
+            label="Descripción (opcional)"
+            value={description}
+            onChangeText={setDescription}
+          />
+        </>
+      )}
+    </Modal>
+  );
+}
+
 function ContextCreateModal({
   namePrefill,
   onClose,
@@ -1247,6 +1808,95 @@ function ContextCreateModal({
   );
 }
 
+function ContextEditModal({
+  row,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: CtxRow;
+  onClose: () => void;
+  onApplied: (next: CtxRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [loading, setLoading] = useState(row.t === 'existing');
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (row.t === 'new') {
+      setTitle(row.title);
+      setDescription(row.description ?? '');
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void contextLivesService
+      .getOne(row.id)
+      .then((x) => {
+        if (cancelled) return;
+        setTitle(x.title);
+        setDescription(x.description ?? '');
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onApiError(e);
+        onClose();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row, onApiError, onClose]);
+
+  const save = async () => {
+    const n = title.trim();
+    if (!n) return;
+    const d = description.trim() || undefined;
+    if (row.t === 'existing') {
+      setSaving(true);
+      try {
+        await contextLivesService.update(row.id, { title: n, description: d });
+        onApplied({ key: row.key, t: 'existing', id: row.id, title: n });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({ key: row.key, t: 'new', title: n, description: d });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title={row.t === 'existing' ? 'Editar contexto vital' : 'Editar borrador (contexto)'}
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={loading || saving}
+      onPrimaryPress={() => void save()}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      ) : (
+        <>
+          <Input label="Título" value={title} onChangeText={setTitle} />
+          <Textarea
+            label="Descripción (opcional)"
+            value={description}
+            onChangeText={setDescription}
+          />
+        </>
+      )}
+    </Modal>
+  );
+}
+
 function FeelingCreateModal({
   onClose,
   onSubmit,
@@ -1279,6 +1929,96 @@ function FeelingCreateModal({
           notes: notes.trim() || undefined,
         });
       }}
+    >
+      <Select
+        label="Tipo"
+        options={FEELING_SELECT}
+        value={kind}
+        onValueChange={(v) => setKind(v as FeelingKind)}
+        placeholder="Elige una emoción"
+        modalTitle="Emoción"
+      />
+      <Switch
+        label="Indicar intensidad (0–10)"
+        value={useIntensity}
+        onValueChange={setUseIntensity}
+      />
+      {useIntensity ? (
+        <Slider
+          label="Intensidad"
+          value={intensity}
+          onValueChange={setIntensity}
+          minimumValue={0}
+          maximumValue={10}
+          step={1}
+        />
+      ) : null}
+      <Input
+        label="Notas (opcional)"
+        value={notes}
+        onChangeText={setNotes}
+      />
+    </Modal>
+  );
+}
+
+function FeelingEditModal({
+  row,
+  sessionId,
+  onClose,
+  onApplied,
+  onApiError,
+}: {
+  row: FeelingRow;
+  sessionId: string;
+  onClose: () => void;
+  onApplied: (next: FeelingRow) => void;
+  onApiError: (e: unknown) => void;
+}) {
+  const [kind, setKind] = useState<FeelingKind | null>(row.kind);
+  const [useIntensity, setUseIntensity] = useState(row.intensity != null);
+  const [intensity, setIntensity] = useState(row.intensity ?? 5);
+  const [notes, setNotes] = useState(row.notes ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!kind) return;
+    const payload = {
+      kind,
+      intensity: useIntensity ? intensity : undefined,
+      notes: notes.trim() || undefined,
+    };
+    if (row.id) {
+      setSaving(true);
+      try {
+        await feelingsService.update(row.id, {
+          kind: payload.kind,
+          dreamSessionId: sessionId,
+          intensity: payload.intensity,
+          notes: payload.notes,
+        });
+        onApplied({ ...row, ...payload });
+        onClose();
+      } catch (e) {
+        onApiError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      onApplied({ ...row, ...payload });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      visible={true}
+      title="Editar sentimiento"
+      onClose={onClose}
+      closeLabel="Cancelar"
+      primaryLabel="Guardar"
+      primaryDisabled={!kind || saving}
+      onPrimaryPress={() => void save()}
     >
       <Select
         label="Tipo"

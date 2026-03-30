@@ -67,6 +67,8 @@ export type CreateFeelingInput = {
   dreamSessionId: string;
 };
 
+export type UpdateFeelingInput = Partial<CreateFeelingInput>;
+
 export const feelingsService = {
   async list(params: QueryFeelingsParams): Promise<Paginated<Feeling>> {
     const raw = await api.get<{
@@ -86,6 +88,14 @@ export const feelingsService = {
 
   async getOne(id: string): Promise<Feeling> {
     const raw = await api.get<ApiFeeling>(`/feelings/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateFeelingInput): Promise<Feeling> {
+    const raw = await api.patch<ApiFeeling>(
+      `/feelings/${encodeURIComponent(id)}`,
+      input,
+    );
     return revive(raw);
   },
 };

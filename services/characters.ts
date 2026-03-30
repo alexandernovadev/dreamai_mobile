@@ -52,6 +52,8 @@ export type CreateCharacterInput = {
   imageUri?: string;
 };
 
+export type UpdateCharacterInput = Partial<CreateCharacterInput>;
+
 /** Etiquetas en español para formularios. */
 export const CHARACTER_ARCHETYPE_OPTIONS: {
   value: CharacterArchetype;
@@ -83,6 +85,14 @@ export const charactersService = {
 
   async getOne(id: string): Promise<Character> {
     const raw = await api.get<ApiCharacter>(`/characters/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateCharacterInput): Promise<Character> {
+    const raw = await api.patch<ApiCharacter>(
+      `/characters/${encodeURIComponent(id)}`,
+      input,
+    );
     return revive(raw);
   },
 };

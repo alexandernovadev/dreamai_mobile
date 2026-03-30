@@ -33,6 +33,8 @@ export type CreateContextLifeInput = {
   description?: string;
 };
 
+export type UpdateContextLifeInput = Partial<CreateContextLifeInput>;
+
 export const contextLivesService = {
   async list(params: QueryContextLivesParams): Promise<Paginated<ContextLife>> {
     const raw = await api.get<{
@@ -53,6 +55,14 @@ export const contextLivesService = {
   async getOne(id: string): Promise<ContextLife> {
     const raw = await api.get<ApiContextLife>(
       `/context-lives/${encodeURIComponent(id)}`,
+    );
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateContextLifeInput): Promise<ContextLife> {
+    const raw = await api.patch<ApiContextLife>(
+      `/context-lives/${encodeURIComponent(id)}`,
+      input,
     );
     return revive(raw);
   },

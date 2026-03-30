@@ -38,6 +38,8 @@ export type CreateDreamEventInput = {
   dreamSessionId: string;
 };
 
+export type UpdateDreamEventInput = Partial<CreateDreamEventInput>;
+
 export const dreamEventsService = {
   async list(params: QueryDreamEventsParams): Promise<Paginated<DreamEvent>> {
     const raw = await api.get<{
@@ -58,6 +60,14 @@ export const dreamEventsService = {
   async getOne(id: string): Promise<DreamEvent> {
     const raw = await api.get<ApiDreamEvent>(
       `/dream-events/${encodeURIComponent(id)}`,
+    );
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateDreamEventInput): Promise<DreamEvent> {
+    const raw = await api.patch<ApiDreamEvent>(
+      `/dream-events/${encodeURIComponent(id)}`,
+      input,
     );
     return revive(raw);
   },

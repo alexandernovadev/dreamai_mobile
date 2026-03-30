@@ -2,6 +2,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -35,6 +36,8 @@ export type ChipProps = {
   selected?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
+  /** Editar entidad (lápiz entre el texto y quitar). */
+  onEdit?: () => void;
   onRemove?: () => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -46,6 +49,7 @@ export function Chip({
   selected = false,
   icon,
   onPress,
+  onEdit,
   onRemove,
   disabled = false,
   style,
@@ -54,39 +58,60 @@ export function Chip({
   const isInteractive = !!onPress;
 
   return (
-    <Pressable
-      accessibilityRole={isInteractive ? 'button' : 'text'}
-      disabled={disabled || !isInteractive}
-      onPress={onPress}
-      style={({ pressed }) => [
+    <View
+      style={[
         styles.chip,
         {
           backgroundColor: selected ? c.bg.replace('0.18', '0.35') : c.bg,
           borderColor: selected ? c.text : c.border,
         },
         disabled && styles.disabled,
-        pressed && isInteractive && styles.pressed,
         style,
       ]}
     >
       {icon && (
         <Ionicons name={icon} size={14} color={c.text} style={styles.icon} />
       )}
-      <Text style={[styles.label, { color: c.text }]} numberOfLines={1}>
-        {label}
-      </Text>
-      {onRemove && (
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={disabled}
+          onPress={onPress}
+          style={({ pressed }) => [styles.labelPress, pressed && isInteractive && styles.pressed]}
+        >
+          <Text style={[styles.label, { color: c.text }]} numberOfLines={1}>
+            {label}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text style={[styles.label, styles.labelFlex, { color: c.text }]} numberOfLines={1}>
+          {label}
+        </Text>
+      )}
+      {onEdit ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Editar"
+          hitSlop={6}
+          disabled={disabled}
+          onPress={onEdit}
+          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
+        >
+          <Ionicons name="create-outline" size={16} color={c.text} />
+        </Pressable>
+      ) : null}
+      {onRemove ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Quitar"
           hitSlop={6}
           onPress={onRemove}
-          style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.5 }]}
+          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
         >
           <Ionicons name="close" size={14} color={c.text} />
         </Pressable>
-      )}
-    </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -105,10 +130,18 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
   },
+  labelFlex: {
+    flexShrink: 1,
+    maxWidth: 200,
+  },
+  labelPress: {
+    flexShrink: 1,
+    maxWidth: 200,
+  },
   icon: {
     marginRight: -2,
   },
-  removeBtn: {
+  iconBtn: {
     marginLeft: 2,
   },
   disabled: {

@@ -47,6 +47,8 @@ export type CreateLocationInput = {
   imageUri?: string;
 };
 
+export type UpdateLocationInput = Partial<CreateLocationInput>;
+
 export const LOCATION_SETTING_OPTIONS: {
   value: LocationSetting;
   label: string;
@@ -76,6 +78,14 @@ export const locationsService = {
 
   async getOne(id: string): Promise<Location> {
     const raw = await api.get<ApiLocation>(`/locations/${encodeURIComponent(id)}`);
+    return revive(raw);
+  },
+
+  async update(id: string, input: UpdateLocationInput): Promise<Location> {
+    const raw = await api.patch<ApiLocation>(
+      `/locations/${encodeURIComponent(id)}`,
+      input,
+    );
     return revive(raw);
   },
 };
