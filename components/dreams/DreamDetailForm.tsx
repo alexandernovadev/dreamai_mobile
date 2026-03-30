@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createElement, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -50,6 +50,12 @@ function formatDateTime(d: Date): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(d);
+}
+
+/** Valor para `<input type="datetime-local">` (zona local del dispositivo). */
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export type DreamDetailFormProps = {
@@ -132,7 +138,7 @@ export function DreamDetailForm({
   const openPicker = useCallback(() => {
     if (Platform.OS === 'ios') {
       setIosPickerOpen(true);
-    } else {
+    } else if (Platform.OS !== 'web') {
       setAndroidStep('date');
     }
   }, []);
@@ -206,24 +212,40 @@ export function DreamDetailForm({
           <Text style={styles.cardTitle}>Fecha y hora del sueño</Text>
         </View>
         <Text style={styles.dateDisplay}>{formatDateTime(ts)}</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={openPicker}
-          style={({ pressed }) => [
-            styles.dateBtn,
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <LinearGradient
-            colors={['rgba(124, 92, 196, 0.35)', 'rgba(80, 168, 255, 0.18)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.dateBtnInner}
+
+        {Platform.OS === 'web' ? (
+          <View style={styles.webDateWrap}>
+            <Text style={styles.webDateLabel}>Fecha y hora</Text>
+            {createElement('input', {
+              type: 'datetime-local',
+              value: toDatetimeLocalValue(ts),
+              onChange: (e: { target: { value: string } }) => {
+                const v = e.target.value;
+                if (v) setTs(new Date(v));
+              },
+              style: styles.webDatetimeInput,
+            })}
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={openPicker}
+            style={({ pressed }) => [
+              styles.dateBtn,
+              pressed && { opacity: 0.85 },
+            ]}
           >
-            <Ionicons name="time-outline" size={18} color={colors.text} />
-            <Text style={styles.dateBtnText}>Cambiar fecha y hora</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={['rgba(124, 92, 196, 0.35)', 'rgba(80, 168, 255, 0.18)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.dateBtnInner}
+            >
+              <Ionicons name="time-outline" size={18} color={colors.text} />
+              <Text style={styles.dateBtnText}>Cambiar fecha y hora</Text>
+            </LinearGradient>
+          </Pressable>
+        )}
 
         {Platform.OS === 'ios' && iosPickerOpen ? (
           <Modal
@@ -433,6 +455,29 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.md,
+  },
+  /** Web: contenedor del control nativo HTML `datetime-local`. */
+  webDateWrap: {
+    marginTop: spacing.xs,
+    gap: spacing.xs,
+  },
+  webDateLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    color: colors.textSecondary,
+  },
+  /** Solo web: `<input type="datetime-local">` (picker del navegador). */
+  webDatetimeInput: {
+    width: '100%',
+    alignSelf: 'stretch',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    fontSize: typography.sizes.md,
+    color: colors.text,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.35)',
   },
   chipGrid: {
     flexDirection: 'row',
