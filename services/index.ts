@@ -18,7 +18,6 @@ export {
   type SuggestedCharacterFromAi,
   type SuggestedLocationFromAi,
   type SuggestedObjectFromAi,
-  type SuggestedContextLifeFromAi,
   type SuggestedEventFromAi,
 } from './dreamSessions';
 export {

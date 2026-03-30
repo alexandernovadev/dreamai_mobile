@@ -184,7 +184,6 @@ export type DreamElementsSuggestResponse = {
   characters: DreamElementSuggestRow<SuggestedCharacterFromAi>[];
   locations: DreamElementSuggestRow<SuggestedLocationFromAi>[];
   objects: DreamElementSuggestRow<SuggestedObjectFromAi>[];
-  contextLife: DreamElementSuggestRow<SuggestedContextLifeFromAi>[];
   events: DreamElementSuggestRow<SuggestedEventFromAi>[];
 };
 
@@ -219,13 +218,6 @@ export type SuggestedLocationFromAi = {
 
 export type SuggestedObjectFromAi = {
   name: string;
-  description?: string;
-  quote?: string;
-  confidence?: number;
-};
-
-export type SuggestedContextLifeFromAi = {
-  title: string;
   description?: string;
   quote?: string;
   confidence?: number;

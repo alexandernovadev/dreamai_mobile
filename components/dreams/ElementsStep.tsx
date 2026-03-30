@@ -269,40 +269,6 @@ function mergeObjectsFromAi(
   return out;
 }
 
-function mergeContextFromAi(
-  prev: CtxRow[],
-  items: DreamElementsSuggestResponse['contextLife'],
-): CtxRow[] {
-  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
-  const existingIds = new Set(
-    base.filter((r): r is Extract<CtxRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
-  );
-  const out: CtxRow[] = [...base];
-  for (const item of items) {
-    if (item.match) {
-      if (!existingIds.has(item.match.catalogId)) {
-        existingIds.add(item.match.catalogId);
-        out.push({
-          key: newKey(),
-          t: 'existing',
-          id: item.match.catalogId,
-          title: item.match.canonicalLabel,
-        });
-      }
-    } else {
-      out.push({
-        key: newKey(),
-        t: 'new',
-        source: 'ai',
-        emphasizeNew: item.emphasizeNew,
-        title: item.fromAi.title,
-        description: item.fromAi.description?.trim() || undefined,
-      });
-    }
-  }
-  return out;
-}
-
 function mergeEventsFromAi(
   prev: EventRow[],
   items: DreamElementsSuggestResponse['events'],
@@ -384,7 +350,6 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
       setCharacters((p) => mergeCharactersFromAi(p, res.characters));
       setLocations((p) => mergeLocationsFromAi(p, res.locations));
       setObjects((p) => mergeObjectsFromAi(p, res.objects));
-      setContextRows((p) => mergeContextFromAi(p, res.contextLife));
       setEvents((p) => mergeEventsFromAi(p, res.events));
     } catch (e) {
       const msg = apiErrorMessage(e);
@@ -1003,7 +968,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         />
 
         <SearchBlock
-          title="Contexto vital"
+          title="Contexto de la vida real"
           chipVariant="teal"
           placeholder="Buscar por título…"
           query={qCtx}
@@ -2107,7 +2072,7 @@ function ContextCreateModal({
   return (
     <Modal
       visible={true}
-      title="Nuevo contexto vital"
+      title="Nuevo contexto de la vida real"
       onClose={onClose}
       closeLabel="Cancelar"
       primaryLabel="Añadir a la lista"
@@ -2196,7 +2161,11 @@ function ContextEditModal({
   return (
     <Modal
       visible={true}
-      title={row.t === 'existing' ? 'Editar contexto vital' : 'Editar borrador (contexto)'}
+      title={
+        row.t === 'existing'
+          ? 'Editar contexto de la vida real'
+          : 'Editar borrador (contexto de la vida real)'
+      }
       onClose={onClose}
       closeLabel="Cancelar"
       primaryLabel="Guardar"
