@@ -20,6 +20,7 @@ import {
   type DreamSessionStatus,
 } from '@/services';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { dreamDateLabel, dreamSnippet } from '@/utils/dream';
 
 const STATUS_LABEL: Record<DreamSessionStatus, string> = {
   DRAFT: 'Borrador',
@@ -53,25 +54,6 @@ const STATUS_TONE: Record<
     text: '#f0d890',
   },
 };
-
-function dreamDateLabel(d: DreamSession): string {
-  const when = d.timestamp ?? d.createdAt;
-  if (!when) return 'Sin fecha';
-  return new Intl.DateTimeFormat('es', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(when);
-}
-
-function dreamSnippet(raw: string): string {
-  const t = raw.trim();
-  if (!t) return 'Sin narrativa…';
-  return t.length > 140 ? `${t.slice(0, 140)}…` : t;
-}
 
 export default function DreamListScreen() {
   const bg = gradients.background;
