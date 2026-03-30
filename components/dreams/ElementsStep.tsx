@@ -23,6 +23,7 @@ import {
   dreamSessionsService,
   feelingsService,
   locationsService,
+  type DreamElementsSuggestResponse,
 } from '@/services';
 import type { SelectOption } from '@/components/ui';
 import {
@@ -64,6 +65,9 @@ type CharRow =
   | {
       key: string;
       t: 'new';
+      /** `ai` = sugerencia aún no guardada; se descarta al volver a pedir IA. */
+      source?: 'ai' | 'user';
+      emphasizeNew?: boolean;
       name: string;
       description: string;
       isKnown: boolean;
@@ -75,6 +79,8 @@ type LocRow =
   | {
       key: string;
       t: 'new';
+      source?: 'ai' | 'user';
+      emphasizeNew?: boolean;
       name: string;
       description: string;
       isFamiliar: boolean;
@@ -83,15 +89,36 @@ type LocRow =
 
 type ObjRow =
   | { key: string; t: 'existing'; id: string; name: string }
-  | { key: string; t: 'new'; name: string; description?: string };
+  | {
+      key: string;
+      t: 'new';
+      source?: 'ai' | 'user';
+      emphasizeNew?: boolean;
+      name: string;
+      description?: string;
+    };
 
 type CtxRow =
   | { key: string; t: 'existing'; id: string; title: string }
-  | { key: string; t: 'new'; title: string; description?: string };
+  | {
+      key: string;
+      t: 'new';
+      source?: 'ai' | 'user';
+      emphasizeNew?: boolean;
+      title: string;
+      description?: string;
+    };
 
 type EventRow =
   | { key: string; t: 'existing'; id: string; label: string }
-  | { key: string; t: 'new'; label: string; description?: string };
+  | {
+      key: string;
+      t: 'new';
+      source?: 'ai' | 'user';
+      emphasizeNew?: boolean;
+      label: string;
+      description?: string;
+    };
 
 type FeelingRow = {
   key: string;
@@ -123,6 +150,192 @@ type Props = {
   onSaved?: () => void;
   onError: (message: string, kind: 'network' | 'server') => void;
 };
+
+const LOC_SETTINGS: readonly LocationSetting[] = [
+  'URBAN',
+  'NATURE',
+  'INDOOR',
+  'ABSTRACT',
+];
+
+function coerceLocationSetting(raw: string): LocationSetting {
+  const u = raw.trim().toUpperCase();
+  return LOC_SETTINGS.includes(u as LocationSetting) ? (u as LocationSetting) : 'ABSTRACT';
+}
+
+function mergeCharactersFromAi(
+  prev: CharRow[],
+  items: DreamElementsSuggestResponse['characters'],
+): CharRow[] {
+  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
+  const existingIds = new Set(
+    base.filter((r): r is Extract<CharRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
+  );
+  const out: CharRow[] = [...base];
+  for (const item of items) {
+    if (item.match) {
+      if (!existingIds.has(item.match.catalogId)) {
+        existingIds.add(item.match.catalogId);
+        out.push({
+          key: newKey(),
+          t: 'existing',
+          id: item.match.catalogId,
+          name: item.match.canonicalLabel,
+        });
+      }
+    } else {
+      out.push({
+        key: newKey(),
+        t: 'new',
+        source: 'ai',
+        emphasizeNew: item.emphasizeNew,
+        name: item.fromAi.name,
+        description: item.fromAi.description,
+        isKnown: item.fromAi.isKnown,
+        archetype: item.fromAi.archetype as CharacterArchetype,
+      });
+    }
+  }
+  return out;
+}
+
+function mergeLocationsFromAi(
+  prev: LocRow[],
+  items: DreamElementsSuggestResponse['locations'],
+): LocRow[] {
+  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
+  const existingIds = new Set(
+    base.filter((r): r is Extract<LocRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
+  );
+  const out: LocRow[] = [...base];
+  for (const item of items) {
+    if (item.match) {
+      if (!existingIds.has(item.match.catalogId)) {
+        existingIds.add(item.match.catalogId);
+        out.push({
+          key: newKey(),
+          t: 'existing',
+          id: item.match.catalogId,
+          name: item.match.canonicalLabel,
+        });
+      }
+    } else {
+      out.push({
+        key: newKey(),
+        t: 'new',
+        source: 'ai',
+        emphasizeNew: item.emphasizeNew,
+        name: item.fromAi.name,
+        description: item.fromAi.description,
+        isFamiliar: item.fromAi.isFamiliar,
+        setting: coerceLocationSetting(item.fromAi.setting),
+      });
+    }
+  }
+  return out;
+}
+
+function mergeObjectsFromAi(
+  prev: ObjRow[],
+  items: DreamElementsSuggestResponse['objects'],
+): ObjRow[] {
+  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
+  const existingIds = new Set(
+    base.filter((r): r is Extract<ObjRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
+  );
+  const out: ObjRow[] = [...base];
+  for (const item of items) {
+    if (item.match) {
+      if (!existingIds.has(item.match.catalogId)) {
+        existingIds.add(item.match.catalogId);
+        out.push({
+          key: newKey(),
+          t: 'existing',
+          id: item.match.catalogId,
+          name: item.match.canonicalLabel,
+        });
+      }
+    } else {
+      out.push({
+        key: newKey(),
+        t: 'new',
+        source: 'ai',
+        emphasizeNew: item.emphasizeNew,
+        name: item.fromAi.name,
+        description: item.fromAi.description?.trim() || undefined,
+      });
+    }
+  }
+  return out;
+}
+
+function mergeContextFromAi(
+  prev: CtxRow[],
+  items: DreamElementsSuggestResponse['contextLife'],
+): CtxRow[] {
+  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
+  const existingIds = new Set(
+    base.filter((r): r is Extract<CtxRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
+  );
+  const out: CtxRow[] = [...base];
+  for (const item of items) {
+    if (item.match) {
+      if (!existingIds.has(item.match.catalogId)) {
+        existingIds.add(item.match.catalogId);
+        out.push({
+          key: newKey(),
+          t: 'existing',
+          id: item.match.catalogId,
+          title: item.match.canonicalLabel,
+        });
+      }
+    } else {
+      out.push({
+        key: newKey(),
+        t: 'new',
+        source: 'ai',
+        emphasizeNew: item.emphasizeNew,
+        title: item.fromAi.title,
+        description: item.fromAi.description?.trim() || undefined,
+      });
+    }
+  }
+  return out;
+}
+
+function mergeEventsFromAi(
+  prev: EventRow[],
+  items: DreamElementsSuggestResponse['events'],
+): EventRow[] {
+  const base = prev.filter((r) => !(r.t === 'new' && r.source === 'ai'));
+  const existingIds = new Set(
+    base.filter((r): r is Extract<EventRow, { t: 'existing' }> => r.t === 'existing').map((r) => r.id),
+  );
+  const out: EventRow[] = [...base];
+  for (const item of items) {
+    if (item.match) {
+      if (!existingIds.has(item.match.catalogId)) {
+        existingIds.add(item.match.catalogId);
+        out.push({
+          key: newKey(),
+          t: 'existing',
+          id: item.match.catalogId,
+          label: item.match.canonicalLabel,
+        });
+      }
+    } else {
+      out.push({
+        key: newKey(),
+        t: 'new',
+        source: 'ai',
+        emphasizeNew: item.emphasizeNew,
+        label: item.fromAi.label,
+        description: item.fromAi.description?.trim() || undefined,
+      });
+    }
+  }
+  return out;
+}
 
 export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   const onErrorRef = useRef(onError);
@@ -160,6 +373,27 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
 
   const [stepModal, setStepModal] = useState<StepModal>(null);
   const [hydrating, setHydrating] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const runAiSuggest = useCallback(async () => {
+    const sid = sessionId?.trim();
+    if (!sid) return;
+    setAiLoading(true);
+    try {
+      const res = await dreamSessionsService.suggestDreamElements(sid);
+      setCharacters((p) => mergeCharactersFromAi(p, res.characters));
+      setLocations((p) => mergeLocationsFromAi(p, res.locations));
+      setObjects((p) => mergeObjectsFromAi(p, res.objects));
+      setContextRows((p) => mergeContextFromAi(p, res.contextLife));
+      setEvents((p) => mergeEventsFromAi(p, res.events));
+    } catch (e) {
+      const msg = apiErrorMessage(e);
+      const kind = e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+      onErrorRef.current(msg, kind);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     const sid = sessionId?.trim();
@@ -676,9 +910,21 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
       >
         <Text style={styles.intro}>
           Extrae personajes, lugares y el resto de elementos. Busca en tu catálogo o crea nuevos;
-          todo se guardará en el servidor al pulsar el botón. La extracción asistida por IA irá en un
-          paso aparte.
+          todo se guardará en el servidor al pulsar Guardar. Puedes pedir sugerencias desde la
+          narrativa: no sustituyen lo que ya guardaste; volver a pedir IA quita solo el último lote de
+          sugerencias aún no guardadas.
         </Text>
+
+        <View style={styles.aiRow}>
+          <Button
+            variant="outline"
+            loading={aiLoading}
+            onPress={() => void runAiSuggest()}
+            disabled={hydrating}
+          >
+            Sugerir con IA
+          </Button>
+        </View>
 
         {hydrating ? (
           <ActivityIndicator color={colors.accent} style={styles.loader} />
@@ -698,7 +944,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           }
           entries={characters.map((r) => ({
             key: r.key,
-            label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            label:
+              r.t === 'existing'
+                ? r.name
+                : `${r.name}${r.source === 'ai' ? ' · IA' : ''}${r.emphasizeNew ? ' ✦' : ''} (nuevo)`,
+            chipVariant: r.t === 'new' && r.emphasizeNew ? 'yellow' : undefined,
             onEdit: () => setStepModal({ kind: 'character', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setCharacters((p) => p.filter((r) => r.key !== key))}
@@ -718,7 +968,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           }
           entries={locations.map((r) => ({
             key: r.key,
-            label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            label:
+              r.t === 'existing'
+                ? r.name
+                : `${r.name}${r.source === 'ai' ? ' · IA' : ''}${r.emphasizeNew ? ' ✦' : ''} (nuevo)`,
+            chipVariant: r.t === 'new' && r.emphasizeNew ? 'yellow' : undefined,
             onEdit: () => setStepModal({ kind: 'location', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setLocations((p) => p.filter((r) => r.key !== key))}
@@ -738,7 +992,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           }
           entries={objects.map((r) => ({
             key: r.key,
-            label: r.t === 'existing' ? r.name : `${r.name} (nuevo)`,
+            label:
+              r.t === 'existing'
+                ? r.name
+                : `${r.name}${r.source === 'ai' ? ' · IA' : ''}${r.emphasizeNew ? ' ✦' : ''} (nuevo)`,
+            chipVariant: r.t === 'new' && r.emphasizeNew ? 'yellow' : undefined,
             onEdit: () => setStepModal({ kind: 'object', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setObjects((p) => p.filter((r) => r.key !== key))}
@@ -758,7 +1016,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           }
           entries={contextRows.map((r) => ({
             key: r.key,
-            label: r.t === 'existing' ? r.title : `${r.title} (nuevo)`,
+            label:
+              r.t === 'existing'
+                ? r.title
+                : `${r.title}${r.source === 'ai' ? ' · IA' : ''}${r.emphasizeNew ? ' ✦' : ''} (nuevo)`,
+            chipVariant: r.t === 'new' && r.emphasizeNew ? 'yellow' : undefined,
             onEdit: () => setStepModal({ kind: 'context', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setContextRows((p) => p.filter((r) => r.key !== key))}
@@ -778,7 +1040,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           }
           entries={events.map((r) => ({
             key: r.key,
-            label: r.t === 'existing' ? r.label : `${r.label} (nuevo)`,
+            label:
+              r.t === 'existing'
+                ? r.label
+                : `${r.label}${r.source === 'ai' ? ' · IA' : ''}${r.emphasizeNew ? ' ✦' : ''} (nuevo)`,
+            chipVariant: r.t === 'new' && r.emphasizeNew ? 'yellow' : undefined,
             onEdit: () => setStepModal({ kind: 'event', mode: 'edit', row: r }),
           }))}
           onRemove={(key) => setEvents((p) => p.filter((r) => r.key !== key))}
@@ -814,7 +1080,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           <Button
             variant="purple"
             onPress={() => void handleSave()}
-            disabled={saving || hydrating}
+            disabled={saving || hydrating || aiLoading}
           >
             {saving ? 'Guardando…' : hydrating ? 'Cargando lista…' : 'Guardar elementos'}
           </Button>
@@ -841,7 +1107,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           setStepModal(null);
         }}
         onUpdateCharacter={(next) =>
-          setCharacters((p) => p.map((r) => (r.key === next.key ? next : r)))
+          setCharacters((p) =>
+            p.map((r) => {
+              if (r.key !== next.key) return r;
+              if (next.t === 'new') {
+                return { ...next, source: 'user' as const };
+              }
+              return next;
+            }),
+          )
         }
         onAddLocation={(row) => {
           setLocations((p) => [
@@ -858,7 +1132,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           setStepModal(null);
         }}
         onUpdateLocation={(next) =>
-          setLocations((p) => p.map((r) => (r.key === next.key ? next : r)))
+          setLocations((p) =>
+            p.map((r) => {
+              if (r.key !== next.key) return r;
+              if (next.t === 'new') {
+                return { ...next, source: 'user' as const };
+              }
+              return next;
+            }),
+          )
         }
         onAddObject={(row) => {
           setObjects((p) => [
@@ -873,7 +1155,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           setStepModal(null);
         }}
         onUpdateObject={(next) =>
-          setObjects((p) => p.map((r) => (r.key === next.key ? next : r)))
+          setObjects((p) =>
+            p.map((r) => {
+              if (r.key !== next.key) return r;
+              if (next.t === 'new') {
+                return { ...next, source: 'user' as const };
+              }
+              return next;
+            }),
+          )
         }
         onAddEvent={(row) => {
           setEvents((p) => [
@@ -888,7 +1178,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           setStepModal(null);
         }}
         onUpdateEvent={(next) =>
-          setEvents((p) => p.map((r) => (r.key === next.key ? next : r)))
+          setEvents((p) =>
+            p.map((r) => {
+              if (r.key !== next.key) return r;
+              if (next.t === 'new') {
+                return { ...next, source: 'user' as const };
+              }
+              return next;
+            }),
+          )
         }
         onAddContext={(row) => {
           setContextRows((p) => [
@@ -903,7 +1201,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           setStepModal(null);
         }}
         onUpdateContext={(next) =>
-          setContextRows((p) => p.map((r) => (r.key === next.key ? next : r)))
+          setContextRows((p) =>
+            p.map((r) => {
+              if (r.key !== next.key) return r;
+              if (next.t === 'new') {
+                return { ...next, source: 'user' as const };
+              }
+              return next;
+            }),
+          )
         }
         onAddFeeling={(row) => {
           setFeelings((p) => [...p, { key: newKey(), ...row }]);
@@ -927,7 +1233,12 @@ function SearchBlock(props: {
   loading: boolean;
   onPick: (id: string, label: string) => void;
   onCreate: () => void;
-  entries: { key: string; label: string; onEdit?: () => void }[];
+  entries: {
+    key: string;
+    label: string;
+    onEdit?: () => void;
+    chipVariant?: ChipVariant;
+  }[];
   onRemove: (key: string) => void;
 }) {
   const {
@@ -985,7 +1296,7 @@ function SearchBlock(props: {
           <Chip
             key={e.key}
             label={e.label}
-            variant={chipVariant}
+            variant={e.chipVariant ?? chipVariant}
             onEdit={e.onEdit}
             onRemove={() => onRemove(e.key)}
           />
@@ -2133,6 +2444,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textMuted,
     fontSize: typography.sizes.md,
+  },
+  aiRow: {
+    alignSelf: 'flex-start',
   },
   saveBlock: {
     gap: spacing.md,

@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
@@ -50,6 +51,8 @@ type Props = Omit<PressableProps, 'children'> & {
   children: string;
   variant?: ButtonVariant;
   compact?: boolean;
+  /** Muestra spinner y texto de carga dentro del botón; equivale a deshabilitado. */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -57,6 +60,7 @@ export function Button({
   children,
   variant = 'yellow',
   compact = false,
+  loading = false,
   disabled,
   style,
   onPressIn,
@@ -65,6 +69,7 @@ export function Button({
 }: Props) {
   const isOutline = variant === 'outline';
   const g = isOutline ? null : buttonGradients[variant];
+  const isDisabled = Boolean(disabled || loading);
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
 
@@ -75,11 +80,11 @@ export function Button({
   const handlePressIn = useCallback(
     (e: Parameters<NonNullable<PressableProps['onPressIn']>>[0]) => {
       onPressIn?.(e);
-      if (disabled) return;
+      if (isDisabled) return;
       scale.value = withSpring(PRESSED_SCALE, SPRING);
       translateY.value = withSpring(PRESSED_TRANSLATE_Y, SPRING);
     },
-    [disabled, onPressIn]
+    [isDisabled, onPressIn]
   );
 
   const handlePressOut = useCallback(
@@ -91,15 +96,21 @@ export function Button({
     [onPressOut]
   );
 
+  const spinnerColor = isOutline
+    ? colors.accent
+    : darkLabelSet.has(variant as ButtonGradientVariant)
+      ? colors.text
+      : colors.buttonLabel;
+
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
+      disabled={isDisabled}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       android_ripple={null}
       {...pressableProps}
-      style={[disabled && styles.disabled, style]}
+      style={[isDisabled && styles.disabled, style]}
     >
       <Animated.View
         style={[
@@ -113,17 +124,33 @@ export function Button({
             style={[
               styles.outlineInner,
               compact && styles.outlineInnerCompact,
+              loading && styles.innerRow,
             ]}
           >
-            <Text
-              style={[
-                styles.label,
-                compact && styles.labelCompact,
-                styles.labelOutline,
-              ]}
-            >
-              {children}
-            </Text>
+            {loading ? (
+              <>
+                <ActivityIndicator size="small" color={spinnerColor} />
+                <Text
+                  style={[
+                    styles.label,
+                    compact && styles.labelCompact,
+                    styles.labelOutline,
+                  ]}
+                >
+                  Analizando narrativa…
+                </Text>
+              </>
+            ) : (
+              <Text
+                style={[
+                  styles.label,
+                  compact && styles.labelCompact,
+                  styles.labelOutline,
+                ]}
+              >
+                {children}
+              </Text>
+            )}
           </View>
         ) : (
           g && (
@@ -132,18 +159,38 @@ export function Button({
                 colors={[...g.colors]}
                 start={g.start}
                 end={g.end}
-                style={[styles.gradient, compact && styles.gradientCompact]}
+                style={[
+                  styles.gradient,
+                  compact && styles.gradientCompact,
+                  loading && styles.innerRow,
+                ]}
               >
-                <Text
-                  style={[
-                    styles.label,
-                    compact && styles.labelCompact,
-                    darkLabelSet.has(variant as ButtonGradientVariant) &&
-                      styles.labelOnDark,
-                  ]}
-                >
-                  {children}
-                </Text>
+                {loading ? (
+                  <>
+                    <ActivityIndicator size="small" color={spinnerColor} />
+                    <Text
+                      style={[
+                        styles.label,
+                        compact && styles.labelCompact,
+                        darkLabelSet.has(variant as ButtonGradientVariant) &&
+                          styles.labelOnDark,
+                      ]}
+                    >
+                      Analizando narrativa…
+                    </Text>
+                  </>
+                ) : (
+                  <Text
+                    style={[
+                      styles.label,
+                      compact && styles.labelCompact,
+                      darkLabelSet.has(variant as ButtonGradientVariant) &&
+                        styles.labelOnDark,
+                    ]}
+                  >
+                    {children}
+                  </Text>
+                )}
               </LinearGradient>
             </View>
           )
@@ -208,5 +255,11 @@ const styles = StyleSheet.create({
   },
   labelOutline: {
     color: colors.text,
+  },
+  innerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
 });

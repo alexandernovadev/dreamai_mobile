@@ -124,6 +124,9 @@ function stripUpdate(
   return out;
 }
 
+/** Hint de idioma para la IA (salida alineada con la app en español). */
+export const DEFAULT_AI_SUGGEST_LOCALE = 'es';
+
 export const dreamSessionsService = {
   async getOne(id: string): Promise<DreamSession> {
     const raw = await api.get<ApiDreamSession>(`/dream-sessions/${id}`);
@@ -159,4 +162,79 @@ export const dreamSessionsService = {
     );
     return revive(raw);
   },
+
+  /**
+   * Dream AI Help (Elementos): sugiere entidades desde `rawNarrative` + empareja catálogo.
+   * No persiste en la sesión. Envía `locale` fijo en español para el hint del modelo.
+   */
+  async suggestDreamElements(
+    sessionId: string,
+  ): Promise<DreamElementsSuggestResponse> {
+    return api.post<DreamElementsSuggestResponse>(
+      `/dream-sessions/${sessionId}/ai/suggest-elements`,
+      { locale: DEFAULT_AI_SUGGEST_LOCALE },
+    );
+  },
 };
+
+/** Respuesta de `POST /dream-sessions/:id/ai/suggest-elements` (staging; no escribe entidades). */
+export type DreamElementsSuggestResponse = {
+  schemaVersion: number;
+  dreamSessionId: string;
+  characters: DreamElementSuggestRow<SuggestedCharacterFromAi>[];
+  locations: DreamElementSuggestRow<SuggestedLocationFromAi>[];
+  objects: DreamElementSuggestRow<SuggestedObjectFromAi>[];
+  contextLife: DreamElementSuggestRow<SuggestedContextLifeFromAi>[];
+  events: DreamElementSuggestRow<SuggestedEventFromAi>[];
+};
+
+export type MatchedCatalogRef = {
+  catalogId: string;
+  canonicalLabel: string;
+};
+
+export type DreamElementSuggestRow<T> = {
+  fromAi: T;
+  match: MatchedCatalogRef | null;
+  emphasizeNew: boolean;
+};
+
+export type SuggestedCharacterFromAi = {
+  name: string;
+  description: string;
+  isKnown: boolean;
+  archetype: string;
+  quote?: string;
+  confidence?: number;
+};
+
+export type SuggestedLocationFromAi = {
+  name: string;
+  description: string;
+  isFamiliar: boolean;
+  setting: string;
+  quote?: string;
+  confidence?: number;
+};
+
+export type SuggestedObjectFromAi = {
+  name: string;
+  description?: string;
+  quote?: string;
+  confidence?: number;
+};
+
+export type SuggestedContextLifeFromAi = {
+  title: string;
+  description?: string;
+  quote?: string;
+  confidence?: number;
+};
+
+export type SuggestedEventFromAi = {
+  label: string;
+  description?: string;
+  quote?: string;
+  confidence?: number;
+};
+

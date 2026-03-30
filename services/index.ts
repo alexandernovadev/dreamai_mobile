@@ -11,6 +11,15 @@ export {
   type DreamAnalysisInput,
   type DreamEntitiesRefs,
   type QueryDreamSessionsParams,
+  type DreamElementsSuggestResponse,
+  type DreamElementSuggestRow,
+  type MatchedCatalogRef,
+  DEFAULT_AI_SUGGEST_LOCALE,
+  type SuggestedCharacterFromAi,
+  type SuggestedLocationFromAi,
+  type SuggestedObjectFromAi,
+  type SuggestedContextLifeFromAi,
+  type SuggestedEventFromAi,
 } from './dreamSessions';
 export {
   charactersService,
