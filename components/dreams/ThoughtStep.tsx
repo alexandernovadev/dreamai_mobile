@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
 import { SuccessBanner } from '@/components/ui/SuccessBanner';
-import { Textarea } from '@/components/ui/Textarea';
+import { TextareaFullHeight } from '@/components/ui/TextareaFullHeight';
 import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import {
   ApiError,
@@ -11,7 +12,9 @@ import {
   dreamSessionsService,
   type DreamSession,
 } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
+
+type ThoughtPanel = 'ai' | 'thought';
 
 export type ThoughtStepProps = {
   sessionId: string;
@@ -38,6 +41,7 @@ export function ThoughtStep({
   const [suggestion, setSuggestion] = useState<string | null>(
     initialAiSummarize?.trim() ? initialAiSummarize.trim() : null,
   );
+  const [panel, setPanel] = useState<ThoughtPanel>('ai');
   const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const trimmed = text.trim();
@@ -51,6 +55,10 @@ export function ThoughtStep({
     const s = initialAiSummarize?.trim();
     setSuggestion(s ? s : null);
   }, [sessionId, initialAiSummarize]);
+
+  useEffect(() => {
+    setPanel('ai');
+  }, [sessionId]);
 
   const handleSave = useCallback(async () => {
     if (!text.trim()) {
@@ -102,57 +110,105 @@ export function ThoughtStep({
   return (
     <KeyboardAvoidingScroll
       style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        panel === 'thought' && styles.scrollContentThought,
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.intro}>
-        ¿Qué te transmite este sueño al despertar? Anota sensaciones, símbolos que
-        te resuenen o preguntas que quieras explorar.
+        Interpretación onírica con IA o tu propia reflexión al despertar.
       </Text>
 
-      <Textarea
-        label="Tu reflexión"
-        placeholder="Escribir libremente…"
-        value={text}
-        onChangeText={setText}
-        minHeight={180}
-        maxHeight={320}
-        autoCapitalize="sentences"
-        hint={
-          !canSave
-            ? 'Escribe una reflexión para poder guardar (no vale solo espacios en blanco).'
-            : undefined
-        }
-      />
-
-      <View style={styles.aiBlock}>
-        <View style={styles.aiHeaderRow}>
-          <Text style={styles.aiHeaderTitle}>Asistencia AI</Text>
-          <Button
-            variant="purple"
-            compact
-            loading={aiLoading}
-            onPress={() => void handleSuggestThought()}
-            accessibilityHint="Genera la lectura onírica con IA y la guarda automáticamente"
-          >
-            Generar
-          </Button>
-        </View>
-        <View style={styles.aiDivider} />
-        <ScrollView
-          style={styles.aiReadingScroll}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
+      <View style={styles.tabBar}>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: panel === 'ai' }}
+          onPress={() => setPanel('ai')}
+          style={({ pressed }) => [
+            styles.tabItem,
+            panel === 'ai' && styles.tabItemActive,
+            pressed && panel !== 'ai' && { opacity: 0.85 },
+          ]}
         >
-          {suggestion ? (
-            <Text style={styles.aiReadingText}>{suggestion}</Text>
-          ) : (
-            <Text style={styles.aiReadingPlaceholder}>
-              La lectura onírica aparecerá aquí.
-            </Text>
-          )}
-        </ScrollView>
+          <Text
+            style={[styles.tabLabel, panel === 'ai' && styles.tabLabelActive]}
+            numberOfLines={1}
+          >
+            AI
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: panel === 'thought' }}
+          onPress={() => setPanel('thought')}
+          style={({ pressed }) => [
+            styles.tabItem,
+            panel === 'thought' && styles.tabItemActive,
+            pressed && panel !== 'thought' && { opacity: 0.85 },
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabLabel,
+              panel === 'thought' && styles.tabLabelActive,
+            ]}
+            numberOfLines={1}
+          >
+            Your thought
+          </Text>
+        </Pressable>
       </View>
+
+      {panel === 'ai' ? (
+        <View style={styles.aiBlock}>
+          <View style={styles.aiHeaderRow}>
+            <Text style={styles.aiHeaderTitle}>Asistencia AI</Text>
+            <Button
+              variant="purple"
+              compact
+              loading={aiLoading}
+              loadingLabel="Generando…"
+              iconStart={
+                <Ionicons name="sparkles" size={18} color={colors.text} />
+              }
+              onPress={() => void handleSuggestThought()}
+              accessibilityHint="Genera la lectura onírica con IA y la guarda automáticamente"
+            >
+              DreamAI Leelo !
+            </Button>
+          </View>
+          <View style={styles.aiDivider} />
+          <ScrollView
+            style={styles.aiReadingScroll}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+          >
+            {suggestion ? (
+              <Text style={styles.aiReadingText}>{suggestion}</Text>
+            ) : (
+              <Text style={styles.aiReadingPlaceholder}>
+                La lectura onírica aparecerá aquí.
+              </Text>
+            )}
+          </ScrollView>
+        </View>
+      ) : (
+        <View style={styles.thoughtColumn}>
+          <TextareaFullHeight
+            label="Tu reflexión"
+            placeholder="Escribir libremente…"
+            value={text}
+            onChangeText={setText}
+            autoCapitalize="sentences"
+            hint={
+              !canSave
+                ? 'Escribe una reflexión para poder guardar (no vale solo espacios en blanco).'
+                : undefined
+            }
+          />
+        </View>
+      )}
 
       <View style={styles.saveBlock}>
         {successMsg ? <SuccessBanner message={successMsg} /> : null}
@@ -174,10 +230,46 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
+  /** Permite que el bloque de reflexión ocupe el alto disponible (como el borrador). */
+  scrollContentThought: {
+    flexGrow: 1,
+  },
+  thoughtColumn: {
+    flex: 1,
+    minHeight: 280,
+    minWidth: 0,
+  },
   intro: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: 3,
+    gap: 2,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  tabItemActive: {
+    backgroundColor: colors.accent,
+  },
+  tabLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    color: colors.textMuted,
+  },
+  tabLabelActive: {
+    color: colors.textInverse,
+    fontWeight: typography.weights.semibold,
   },
   aiBlock: {
     gap: 0,
@@ -219,5 +311,6 @@ const styles = StyleSheet.create({
   },
   saveBlock: {
     gap: spacing.md,
+    marginTop: spacing.sm,
   },
 });

@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -53,6 +53,10 @@ type Props = Omit<PressableProps, 'children'> & {
   compact?: boolean;
   /** Muestra spinner y texto de carga dentro del botón; equivale a deshabilitado. */
   loading?: boolean;
+  /** Texto junto al spinner cuando `loading` es true (p. ej. contexto distinto al borrador). */
+  loadingLabel?: string;
+  /** Icono u otro nodo antes del texto (solo cuando no está en carga). */
+  iconStart?: ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -61,6 +65,8 @@ export function Button({
   variant = 'yellow',
   compact = false,
   loading = false,
+  loadingLabel = 'Analizando narrativa…',
+  iconStart,
   disabled,
   style,
   onPressIn,
@@ -124,7 +130,7 @@ export function Button({
             style={[
               styles.outlineInner,
               compact && styles.outlineInnerCompact,
-              loading && styles.innerRow,
+              (loading || Boolean(iconStart)) && styles.innerRow,
             ]}
           >
             {loading ? (
@@ -137,7 +143,20 @@ export function Button({
                     styles.labelOutline,
                   ]}
                 >
-                  Analizando narrativa…
+                  {loadingLabel}
+                </Text>
+              </>
+            ) : iconStart ? (
+              <>
+                {iconStart}
+                <Text
+                  style={[
+                    styles.label,
+                    compact && styles.labelCompact,
+                    styles.labelOutline,
+                  ]}
+                >
+                  {children}
                 </Text>
               </>
             ) : (
@@ -162,7 +181,7 @@ export function Button({
                 style={[
                   styles.gradient,
                   compact && styles.gradientCompact,
-                  loading && styles.innerRow,
+                  (loading || Boolean(iconStart)) && styles.innerRow,
                 ]}
               >
                 {loading ? (
@@ -176,7 +195,21 @@ export function Button({
                           styles.labelOnDark,
                       ]}
                     >
-                      Analizando narrativa…
+                      {loadingLabel}
+                    </Text>
+                  </>
+                ) : iconStart ? (
+                  <>
+                    {iconStart}
+                    <Text
+                      style={[
+                        styles.label,
+                        compact && styles.labelCompact,
+                        darkLabelSet.has(variant as ButtonGradientVariant) &&
+                          styles.labelOnDark,
+                      ]}
+                    >
+                      {children}
                     </Text>
                   </>
                 ) : (
