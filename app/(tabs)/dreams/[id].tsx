@@ -18,20 +18,20 @@ export default function DreamDetailScreen() {
       style={s.root}
     >
       <View style={[s.safe, { paddingTop: insets.top }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          hitSlop={12}
-          onPress={() => router.back()}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+            hitSlop={12}
+            onPress={() => router.back()}
           style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.5 }]}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </Pressable>
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </Pressable>
 
         <View style={s.center}>
           <Text style={s.placeholder}>Detalle de sueño — en desarrollo</Text>
-        </View>
-      </View>
+          </View>
+          </View>
     </LinearGradient>
   );
 }

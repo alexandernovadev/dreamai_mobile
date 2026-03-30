@@ -1,12 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 export default function DreamsListScreen() {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <LinearGradient
@@ -37,6 +39,22 @@ export default function DreamsListScreen() {
             <Text style={s.emptyChipText}>En desarrollo</Text>
           </View>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo sueño"
+          onPress={() => router.push('/dreams/new')}
+          style={({ pressed }) => [
+            s.fab,
+            {
+              bottom: insets.bottom + spacing.lg,
+              right: spacing.xl + insets.right,
+            },
+            pressed && s.fabPressed,
+          ]}
+        >
+          <Ionicons name="add" size={28} color={colors.textInverse} />
+        </Pressable>
       </View>
     </LinearGradient>
   );
@@ -112,4 +130,20 @@ const s = StyleSheet.create({
     fontWeight: typography.weights.medium,
     color: colors.accent,
   },
+
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabPressed: { opacity: 0.9 },
 });
