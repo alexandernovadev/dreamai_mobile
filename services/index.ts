@@ -13,6 +13,7 @@ export {
   type UpdateDreamSessionInput,
   type DreamAnalysisInput,
   type DreamEntitiesRefs,
+  type DreamSessionHydratedMaps,
   type QueryDreamSessionsParams,
   type DreamElementsSuggestResponse,
   type DreamElementSuggestRow,
