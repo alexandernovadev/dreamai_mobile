@@ -39,6 +39,18 @@ function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
 }
 
+function formatDreamWhen(ts: string | null): string {
+  if (!ts) return 'Sin fecha';
+  try {
+    return new Intl.DateTimeFormat('es', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(ts));
+  } catch {
+    return 'Sin fecha';
+  }
+}
+
 /** /signals/:entity/:id — catalog item detail. */
 export default function SignalsCatalogDetailScreen() {
   const { entity, id } = useLocalSearchParams<{ entity: string; id: string }>();
@@ -160,10 +172,39 @@ export default function SignalsCatalogDetailScreen() {
               {view.subtitle ? (
                 <Text style={styles.desc}>{view.subtitle}</Text>
               ) : null}
-              <Text style={styles.meta}>
-                ×{view.appearanceCount}{' '}
-                {view.appearanceCount === 1 ? 'aparición' : 'apariciones'}
-              </Text>
+              <Text style={styles.sectionLabel}>Apariciones en sueños</Text>
+              {view.dreamSessions.length === 0 ? (
+                <Text style={styles.metaEmpty}>Ninguna aún</Text>
+              ) : (
+                <View style={styles.dreamList}>
+                  {view.dreamSessions.map((ds) => (
+                    <Pressable
+                      key={ds.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Abrir sueño del ${formatDreamWhen(ds.timestamp)}`}
+                      onPress={() => router.push(`/dream/${ds.id}`)}
+                      style={({ pressed }) => [
+                        styles.dreamRow,
+                        pressed && styles.dreamRowPressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name="moon-outline"
+                        size={20}
+                        color={colors.accent}
+                      />
+                      <Text style={styles.dreamRowLabel} numberOfLines={2}>
+                        {formatDreamWhen(ds.timestamp)}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={colors.textMuted}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+              )}
             </View>
           </ScrollView>
         ) : null}
@@ -244,9 +285,38 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  meta: {
+  sectionLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  metaEmpty: {
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  dreamList: {
+    gap: spacing.sm,
+  },
+  dreamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.22)',
+  },
+  dreamRowPressed: {
+    opacity: 0.88,
+  },
+  dreamRowLabel: {
+    flex: 1,
+    fontSize: typography.sizes.md,
+    color: colors.text,
   },
   err: {
     marginTop: spacing.lg,

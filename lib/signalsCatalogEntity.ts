@@ -6,7 +6,17 @@ import {
   feelingsService,
   locationsService,
 } from '@/services';
+import type { DreamAppearances } from '@/services/dreamAppearances';
 import type { SignalEntityListSlug } from '@/services/signalEntities';
+
+export type SignalsCatalogDetailView = {
+  title: string;
+  subtitle?: string;
+  imageUri?: string;
+  appearanceCount: number;
+  /** Cada ítem es un sueño donde aparece la entidad. */
+  dreamSessions: { id: string; timestamp: string | null }[];
+};
 
 /** One catalog row from `getOne` + slug (shared cache for detail + edit). */
 export type SignalsCatalogEntity =
@@ -74,12 +84,16 @@ function feelingTitleEn(kind: string): string {
     .join(' ');
 }
 
-export function mapSignalsCatalogEntityToDetail(row: SignalsCatalogEntity): {
-  title: string;
-  subtitle?: string;
-  imageUri?: string;
-  appearanceCount: number;
-} {
+function dreamSessionsFrom(d: { dreamAppearances?: DreamAppearances }) {
+  return (d.dreamAppearances?.dreams ?? []).map((x) => ({
+    id: x._id,
+    timestamp: x.timestamp ?? null,
+  }));
+}
+
+export function mapSignalsCatalogEntityToDetail(
+  row: SignalsCatalogEntity,
+): SignalsCatalogDetailView {
   const ac = (d: { dreamAppearances?: { count?: number } }) =>
     d.dreamAppearances?.count ?? 0;
   switch (row.slug) {
@@ -91,24 +105,28 @@ export function mapSignalsCatalogEntityToDetail(row: SignalsCatalogEntity): {
         subtitle: row.data.description,
         imageUri: row.data.imageUri,
         appearanceCount: ac(row.data),
+        dreamSessions: dreamSessionsFrom(row.data),
       };
     case 'events':
       return {
         title: row.data.label,
         subtitle: row.data.description,
         appearanceCount: ac(row.data),
+        dreamSessions: dreamSessionsFrom(row.data),
       };
     case 'life-context':
       return {
         title: row.data.title,
         subtitle: row.data.description,
         appearanceCount: ac(row.data),
+        dreamSessions: dreamSessionsFrom(row.data),
       };
     case 'feelings':
       return {
         title: feelingTitleEn(row.data.kind),
         subtitle: row.data.notes,
         appearanceCount: ac(row.data),
+        dreamSessions: dreamSessionsFrom(row.data),
       };
   }
 }
