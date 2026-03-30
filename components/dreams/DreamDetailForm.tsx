@@ -280,11 +280,12 @@ export function DreamDetailForm({
         <View style={styles.chipGrid}>
           {DREAM_KIND_OPTIONS.map((opt, idx) => {
             const selected = kinds.includes(opt.value);
+            const colorVariant = KIND_VARIANTS[idx % KIND_VARIANTS.length];
             return (
               <Chip
                 key={opt.value}
                 label={opt.label}
-                variant={KIND_VARIANTS[idx % KIND_VARIANTS.length]}
+                variant={selected ? colorVariant : 'neutral'}
                 selected={selected}
                 onPress={() => toggleKind(opt.value)}
               />
