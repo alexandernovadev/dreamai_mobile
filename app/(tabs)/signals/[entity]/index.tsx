@@ -18,7 +18,10 @@ import {
   ENTITY_CATALOG_PAGE_SIZE,
   fetchEntityListPage,
 } from '@/services/entityCatalogList';
-import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
+import {
+  SIGNAL_ENTITY_SECTIONS,
+  type SignalEntityListSlug,
+} from '@/services/signalEntities';
 import type { SignalHubCardItem } from '@/services/signalsHub';
 import type { PaginatedMeta } from '@/services/query';
 import { colors, gradients, spacing, typography } from '@/theme';
@@ -27,7 +30,8 @@ function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
 }
 
-export default function EntityListScreen() {
+/** /signals/:entity — full catalog list (e.g. /signals/characters). */
+export default function SignalsEntityListScreen() {
   const { entity } = useLocalSearchParams<{ entity: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -99,6 +103,14 @@ export default function EntityListScreen() {
     void loadPage(meta.page + 1, 'append');
   }, [meta, loading, loadingMore, refreshing, loadPage]);
 
+  const openDetail = useCallback(
+    (item: SignalHubCardItem) => {
+      if (!isSignalSlug(slug)) return;
+      router.push(`/signals/${slug}/${item.id}`);
+    },
+    [router, slug],
+  );
+
   if (!isSignalSlug(slug)) {
     return (
       <LinearGradient
@@ -156,7 +168,9 @@ export default function EntityListScreen() {
             data={items}
             keyExtractor={(it) => it.id}
             renderItem={({ item }) => (
-              <EntityCatalogListRow sectionSlug={slug} item={item} />
+              <Pressable onPress={() => openDetail(item)}>
+                <EntityCatalogListRow sectionSlug={slug} item={item} />
+              </Pressable>
             )}
             contentContainerStyle={styles.listContent}
             refreshControl={

@@ -11,7 +11,10 @@ import {
   loadAllSignalHubSections,
   type SignalHubCardItem,
 } from '@/services/signalsHub';
-import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
+import {
+  SIGNAL_ENTITY_SECTIONS,
+  type SignalEntityListSlug,
+} from '@/services/signalEntities';
 import { colors, gradients, spacing, typography } from '@/theme';
 
 const CARDS_PER_SECTION = 5;
@@ -22,10 +25,9 @@ type HubState = Record<
 > | null;
 
 /**
- * Signals hub — catalog previews (5 per entity, sorted by updatedAt) + appearance counts.
- * "See all" → `/entity-list/[slug]` (stub until step 3 lists).
+ * /signals — hub. See all → /signals/:entity (e.g. /signals/characters).
  */
-export default function SignalsScreen() {
+export default function SignalsHubScreen() {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -79,7 +81,7 @@ export default function SignalsScreen() {
               <SignalsSection
                 key={slug}
                 title={section.title}
-                onSeeAll={() => router.push(`/entity-list/${slug}`)}
+                onSeeAll={() => router.push(`/signals/${slug}`)}
               >
                 {error ? (
                   <View style={styles.inlineMessage}>

@@ -1,5 +1,5 @@
 /**
- * Signal hub sections — English UI copy. `listSlug` matches `/entity-list/[entity]` route.
+ * Signal hub sections — English UI copy. `listSlug` matches `/signals/:entity` routes.
  */
 export const SIGNAL_ENTITY_SECTIONS = [
   { listSlug: 'characters', title: 'Characters' },
