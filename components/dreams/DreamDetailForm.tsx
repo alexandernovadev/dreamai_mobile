@@ -21,14 +21,18 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import type { ChipVariant } from '@/components/ui/Chip';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
+import { Slider } from '@/components/ui/Slider';
 import { SuccessBanner } from '@/components/ui/SuccessBanner';
 import { useSuccessBanner } from '@/hooks/useSuccessBanner';
 import {
   ApiError,
   apiErrorMessage,
   DREAM_KIND_OPTIONS,
+  DREAM_PERSPECTIVE_OPTIONS,
   dreamSessionsService,
+  perspectivesForForm,
   uploadDreamImageToCloudinary,
+  type DreamAnalysisInput,
   type DreamSession,
 } from '@/services';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -66,6 +70,10 @@ export type DreamDetailFormProps = {
   initialTimestamp?: Date;
   initialDreamKind: string[];
   initialDreamImages: string[];
+  /** `analysis.perspectives` desde el servidor o estado del editor. */
+  initialPerspectives?: string[];
+  /** `analysis.lucidityLevel` 0–10; si no hay, el slider inicia en 1. */
+  initialLucidityLevel?: number;
   onSaved?: (session: DreamSession) => void;
   onError: (message: string, kind: 'network' | 'server') => void;
 };
@@ -75,6 +83,8 @@ export function DreamDetailForm({
   initialTimestamp,
   initialDreamKind,
   initialDreamImages,
+  initialPerspectives = [],
+  initialLucidityLevel,
   onSaved,
   onError,
 }: DreamDetailFormProps) {
@@ -85,6 +95,20 @@ export function DreamDetailForm({
   const [ts, setTs] = useState(() => initialTimestamp ?? new Date());
   const [kinds, setKinds] = useState<string[]>(() => [...initialDreamKind]);
   const [images, setImages] = useState<string[]>(() => [...initialDreamImages]);
+
+  const [perspectives, setPerspectives] = useState<string[]>(() =>
+    perspectivesForForm(initialPerspectives),
+  );
+  const [lucidity, setLucidity] = useState(() => {
+    if (
+      initialLucidityLevel != null &&
+      initialLucidityLevel >= 0 &&
+      initialLucidityLevel <= 10
+    ) {
+      return initialLucidityLevel;
+    }
+    return 1;
+  });
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -99,11 +123,36 @@ export function DreamDetailForm({
     setTs(initialTimestamp ?? new Date());
     setKinds([...initialDreamKind]);
     setImages([...initialDreamImages]);
-  }, [sessionId, initialTimestamp, initialDreamKind, initialDreamImages]);
+    setPerspectives(perspectivesForForm(initialPerspectives));
+    if (
+      initialLucidityLevel != null &&
+      initialLucidityLevel >= 0 &&
+      initialLucidityLevel <= 10
+    ) {
+      setLucidity(initialLucidityLevel);
+    } else {
+      setLucidity(1);
+    }
+  }, [
+    sessionId,
+    initialTimestamp,
+    initialDreamKind,
+    initialDreamImages,
+    initialPerspectives,
+    initialLucidityLevel,
+  ]);
 
   const toggleKind = useCallback((value: string) => {
     setKinds((prev) =>
       prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value],
+    );
+  }, []);
+
+  const togglePerspective = useCallback((value: string) => {
+    setPerspectives((prev) =>
+      prev.includes(value)
+        ? prev.filter((x) => x !== value)
+        : [...prev, value],
     );
   }, []);
 
@@ -186,11 +235,26 @@ export function DreamDetailForm({
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
+      const existing = await dreamSessionsService.getOne(sessionId);
+      const perspectiveValues = perspectivesForForm(perspectives);
+
+      const mergedAnalysis: DreamAnalysisInput = {
+        perspectives: perspectiveValues,
+      };
+      if (existing.analysis?.entities) {
+        mergedAnalysis.entities = existing.analysis.entities;
+      }
+      mergedAnalysis.lucidityLevel = Math.min(
+        10,
+        Math.max(0, Math.round(lucidity)),
+      );
+
       const session = await dreamSessionsService.update(sessionId, {
         timestamp: ts,
         dreamKind: kinds,
         dreamImages: images,
         status: 'STRUCTURED',
+        analysis: mergedAnalysis,
       });
       queryClient.setQueryData(
         queryKeys.dreamSessions.detail(sessionId),
@@ -218,6 +282,8 @@ export function DreamDetailForm({
     ts,
     kinds,
     images,
+    perspectives,
+    lucidity,
     onError,
     onSaved,
     showSuccessBanner,
@@ -337,6 +403,41 @@ export function DreamDetailForm({
             );
           })}
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHead}>
+          <Ionicons name="eye-outline" size={20} color={colors.accent} />
+          <Text style={styles.cardTitle}>Perspectivas y lucidez</Text>
+        </View>
+        <Text style={styles.cardHint}>
+          ¿Actuabas en el sueño, lo observabas o ambas cosas? Lucidez 0–10.
+        </Text>
+        <View style={styles.chipGrid}>
+          {DREAM_PERSPECTIVE_OPTIONS.map((opt, idx) => {
+            const selected = perspectives.includes(opt.value);
+            const colorVariant =
+              KIND_VARIANTS[(idx + 3) % KIND_VARIANTS.length];
+            return (
+              <Chip
+                key={opt.value}
+                label={opt.label}
+                variant={selected ? colorVariant : 'neutral'}
+                selected={selected}
+                onPress={() => togglePerspective(opt.value)}
+              />
+            );
+          })}
+        </View>
+
+        <Slider
+          label={`Nivel de lucidez: ${lucidity} / 10`}
+          value={lucidity}
+          onValueChange={setLucidity}
+          minimumValue={0}
+          maximumValue={10}
+          step={1}
+        />
       </View>
 
       <View style={styles.card}>

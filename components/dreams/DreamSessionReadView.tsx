@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Chip } from '@/components/ui/Chip';
 import {
   DREAM_KIND_OPTIONS,
+  dreamPerspectiveLabel,
   FEELING_KIND_OPTIONS,
   type DreamSession,
   type DreamSessionHydratedMaps,
@@ -384,7 +385,7 @@ export function DreamSessionReadView({
               {perspectives.map((p, i) => (
                 <View key={`${i}-${p.slice(0, 24)}`} style={styles.bulletRow}>
                   <Text style={styles.bullet}>•</Text>
-                  <Text style={styles.bodyText}>{p}</Text>
+                  <Text style={styles.bodyText}>{dreamPerspectiveLabel(p)}</Text>
                 </View>
               ))}
             </View>

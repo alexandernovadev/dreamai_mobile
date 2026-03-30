@@ -6,6 +6,12 @@ export {
 } from './cloudinary';
 export { DREAM_KIND_OPTIONS } from './dreamKinds';
 export {
+  DREAM_PERSPECTIVE_OPTIONS,
+  dreamPerspectiveLabel,
+  filterAllowedPerspectives,
+  perspectivesForForm,
+} from './dreamPerspectives';
+export {
   dreamSessionsService,
   type DreamSession,
   type DreamSessionStatus,

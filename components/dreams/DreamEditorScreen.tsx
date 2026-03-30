@@ -20,6 +20,7 @@ import {
   ApiError,
   apiErrorMessage,
   dreamSessionsService,
+  filterAllowedPerspectives,
   type DreamSession,
 } from '@/services';
 
@@ -77,6 +78,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
     setDetailTimestamp(s.timestamp);
     setDetailKinds(s.dreamKind ?? []);
     setDetailImages(s.dreamImages ?? []);
+    setDetailPerspectives(
+      filterAllowedPerspectives(s.analysis?.perspectives ?? []),
+    );
+    setDetailLucidityLevel(s.analysis?.lucidityLevel);
     setUserThought(s.userThought ?? '');
     setAiSummarize(s.aiSummarize);
     setDraftSaved(true);
@@ -102,6 +107,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [detailTimestamp, setDetailTimestamp] = useState<Date | undefined>();
   const [detailKinds, setDetailKinds] = useState<string[]>([]);
   const [detailImages, setDetailImages] = useState<string[]>([]);
+  const [detailPerspectives, setDetailPerspectives] = useState<string[]>([]);
+  const [detailLucidityLevel, setDetailLucidityLevel] = useState<
+    number | undefined
+  >();
   const [userThought, setUserThought] = useState<string>('');
   const [aiSummarize, setAiSummarize] = useState<string | undefined>();
   const { message: draftSuccessMsg, show: showDraftSuccess } = useSuccessBanner();
@@ -129,6 +138,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
       setDetailTimestamp(saved.timestamp);
       setDetailKinds(saved.dreamKind ?? []);
       setDetailImages(saved.dreamImages ?? []);
+      setDetailPerspectives(
+        filterAllowedPerspectives(saved.analysis?.perspectives ?? []),
+      );
+      setDetailLucidityLevel(saved.analysis?.lucidityLevel);
       setUserThought(saved.userThought ?? '');
       setAiSummarize(saved.aiSummarize);
       queryClient.setQueryData(queryKeys.dreamSessions.detail(saved.id), saved);
@@ -339,10 +352,16 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                   initialTimestamp={detailTimestamp}
                   initialDreamKind={detailKinds}
                   initialDreamImages={detailImages}
+                  initialPerspectives={detailPerspectives}
+                  initialLucidityLevel={detailLucidityLevel}
                   onSaved={(s) => {
                     setDetailTimestamp(s.timestamp);
                     setDetailKinds(s.dreamKind ?? []);
                     setDetailImages(s.dreamImages ?? []);
+                    setDetailPerspectives(
+                      filterAllowedPerspectives(s.analysis?.perspectives ?? []),
+                    );
+                    setDetailLucidityLevel(s.analysis?.lucidityLevel);
                   }}
                   onError={(message, kind) => setSaveError({ message, kind })}
                 />
