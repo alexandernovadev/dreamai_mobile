@@ -214,9 +214,10 @@ export function DreamSessionReadView({
   const when = session.timestamp ?? session.createdAt;
   const dateLine = when ? formatDreamDateTime(when) : 'Sin fecha';
 
-  function goSignal(slug: SignalEntityListSlug, id: string) {
-    if (!id) return;
-    router.push(`/signals/${slug}/${id}`);
+  function goSignal(slug: SignalEntityListSlug, catalogId: string) {
+    if (!catalogId) return;
+    const returnTo = encodeURIComponent(`/dream/${session.id}`);
+    router.push(`/signals/${slug}/${catalogId}?returnTo=${returnTo}`);
   }
 
   return (

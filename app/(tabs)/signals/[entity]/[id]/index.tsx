@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import {
 import { queryKeys } from '@/lib/queryKeys';
 import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { safeDreamReturnToHref } from '@/utils/safeDreamReturnToHref';
 
 /** Lado máximo del cuadrado (px): evita imagen “alargada” en pantallas anchas. */
 const DETAIL_IMAGE_MAX_SIDE = 260;
@@ -53,7 +54,11 @@ function formatDreamWhen(ts: string | null): string {
 
 /** /signals/:entity/:id — catalog item detail. */
 export default function SignalsCatalogDetailScreen() {
-  const { entity, id } = useLocalSearchParams<{ entity: string; id: string }>();
+  const { entity, id, returnTo } = useLocalSearchParams<{
+    entity: string;
+    id: string;
+    returnTo?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -97,6 +102,29 @@ export default function SignalsCatalogDetailScreen() {
       ? DETAIL_HEADER_ES[slug]
       : 'Detalle';
 
+  const dreamReturnHref = useMemo(
+    () => safeDreamReturnToHref(returnTo),
+    [returnTo],
+  );
+
+  const editHref = useMemo(() => {
+    const base = `/signals/${slug}/${rawId}/edit`;
+    if (!dreamReturnHref) return base;
+    return `${base}?returnTo=${encodeURIComponent(dreamReturnHref)}`;
+  }, [slug, rawId, dreamReturnHref]);
+
+  function handleBack() {
+    if (dreamReturnHref) {
+      router.push(dreamReturnHref as Href);
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace(slugOk ? `/signals/${slug}` : '/signals');
+  }
+
   return (
     <LinearGradient
       colors={[...bg.colors]}
@@ -109,7 +137,7 @@ export default function SignalsCatalogDetailScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            onPress={() => handleBack()}
             style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.8 }]}
           >
             <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -120,7 +148,7 @@ export default function SignalsCatalogDetailScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Edit"
-            onPress={() => router.push(`/signals/${slug}/${rawId}/edit`)}
+            onPress={() => router.push(editHref as Href)}
             style={({ pressed }) => [styles.editIcon, pressed && { opacity: 0.8 }]}
           >
             <Ionicons name="create-outline" size={22} color={colors.accent} />
