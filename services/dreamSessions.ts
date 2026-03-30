@@ -158,6 +158,36 @@ export type DreamSessionHydratedResponse = {
   hydrated: DreamSessionHydratedMaps;
 };
 
+export type DreamAnalyticsCatalogTotals = {
+  characters: number;
+  locations: number;
+  objects: number;
+  events: number;
+  contextLife: number;
+  feelings: number;
+};
+
+export type DreamAnalyticsLucidityBin = {
+  level: number;
+  count: number;
+};
+
+export type DreamAnalyticsTopEntity = {
+  id: string;
+  name: string;
+  count: number;
+};
+
+/** `GET /dream-sessions/analytics/overview` (toda la vida, sin filtro de fechas). */
+export type DreamAnalyticsOverview = {
+  dreamCount: number;
+  catalogTotals: DreamAnalyticsCatalogTotals;
+  lucidityHistogram: DreamAnalyticsLucidityBin[];
+  topCharacters: DreamAnalyticsTopEntity[];
+  topLocations: DreamAnalyticsTopEntity[];
+  topObjects: DreamAnalyticsTopEntity[];
+};
+
 export const dreamSessionsService = {
   async getOne(id: string): Promise<DreamSession> {
     const raw = await api.get<ApiDreamSession>(`/dream-sessions/${id}`);
@@ -171,6 +201,12 @@ export const dreamSessionsService = {
       hydrated: DreamSessionHydratedMaps;
     }>(`/dream-sessions/${id}/hydrated`);
     return { session: revive(raw.session), hydrated: raw.hydrated };
+  },
+
+  async getAnalyticsOverview(): Promise<DreamAnalyticsOverview> {
+    return api.get<DreamAnalyticsOverview>(
+      '/dream-sessions/analytics/overview',
+    );
   },
 
   async list(params: QueryDreamSessionsParams = {}): Promise<Paginated<DreamSession>> {

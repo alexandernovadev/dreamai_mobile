@@ -22,5 +22,8 @@ export const queryKeys = {
     /** Hydrated editor payload (getHydrated). */
     hydrated: (id: string) =>
       [...queryKeys.dreamSessions.all, 'hydrated', id] as const,
+    /** Home / dashboard global (sin rango de fechas). */
+    analyticsOverview: () =>
+      [...queryKeys.dreamSessions.all, 'analytics', 'overview'] as const,
   },
 } as const;

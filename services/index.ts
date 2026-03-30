@@ -30,6 +30,10 @@ export {
   type SuggestedObjectFromAi,
   type SuggestedEventFromAi,
   type DreamThoughtSuggestResponse,
+  type DreamAnalyticsOverview,
+  type DreamAnalyticsCatalogTotals,
+  type DreamAnalyticsLucidityBin,
+  type DreamAnalyticsTopEntity,
 } from './dreamSessions';
 export {
   charactersService,
