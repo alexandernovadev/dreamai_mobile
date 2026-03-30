@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { TextareaFullHeight } from '@/components/ui/TextareaFullHeight';
 import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
 import { ElementsStep } from '@/components/dreams/ElementsStep';
+import { ThoughtStep } from '@/components/dreams/ThoughtStep';
 import {
   ApiError,
   apiErrorMessage,
@@ -61,6 +62,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [detailTimestamp, setDetailTimestamp] = useState<Date | undefined>();
   const [detailKinds, setDetailKinds] = useState<string[]>([]);
   const [detailImages, setDetailImages] = useState<string[]>([]);
+  const [userThought, setUserThought] = useState<string>('');
 
   useEffect(() => {
     if (mode !== 'edit' || !initialSessionId) {
@@ -77,6 +79,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailTimestamp(s.timestamp);
         setDetailKinds(s.dreamKind ?? []);
         setDetailImages(s.dreamImages ?? []);
+        setUserThought(s.userThought ?? '');
         setDraftSaved(true);
         setBootLoading(false);
       })
@@ -120,6 +123,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailTimestamp(saved.timestamp);
         setDetailKinds(saved.dreamKind ?? []);
         setDetailImages(saved.dreamImages ?? []);
+        setUserThought(saved.userThought ?? '');
       } else {
         const created = await dreamSessionsService.create({
           timestamp: now,
@@ -130,6 +134,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         setDetailTimestamp(created.timestamp);
         setDetailKinds(created.dreamKind ?? []);
         setDetailImages(created.dreamImages ?? []);
+        setUserThought(created.userThought ?? '');
       }
       setDraftSaved(true);
     } catch (e) {
@@ -319,11 +324,21 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               </View>
             ) : null}
 
-            {activeTab === 'thought' && (
-              <View style={styles.placeholderWrap}>
-                <Text style={styles.placeholder}>Reflexión — próximo paso</Text>
+            {draftSaved && sessionId ? (
+              <View
+                style={[
+                  styles.thoughtPanel,
+                  activeTab !== 'thought' && styles.elementsPanelHidden,
+                ]}
+              >
+                <ThoughtStep
+                  sessionId={sessionId}
+                  initialUserThought={userThought}
+                  onSaved={(s) => setUserThought(s.userThought ?? '')}
+                  onError={(message, kind) => setSaveError({ message, kind })}
+                />
               </View>
-            )}
+            ) : null}
           </View>
         </View>
       </LinearGradient>
@@ -475,6 +490,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   detailPanel: {
+    flex: 1,
+    minHeight: 0,
+  },
+  thoughtPanel: {
     flex: 1,
     minHeight: 0,
   },
