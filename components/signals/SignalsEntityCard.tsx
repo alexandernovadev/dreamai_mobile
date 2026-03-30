@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { SignalHubCardItem } from '@/services/signalsHub';
 import type { SignalEntityListSlug } from '@/services/signalEntities';
 import { colors, radius, spacing, typography } from '@/theme';
@@ -25,9 +26,21 @@ type Props = {
 };
 
 export function SignalsEntityCard({ sectionSlug, item }: Props) {
+  const router = useRouter();
   const icon = PLACEHOLDER_ICON[sectionSlug];
+
+  const goToDetail = () => {
+    router.push(`/signals/${sectionSlug}/${item.id}`);
+  };
+
   return (
-    <View style={styles.card} accessibilityLabel={`${item.title}, ${item.appearanceCount} appearances`}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${item.appearanceCount} appearances`}
+      accessibilityHint="Abre la ficha de detalle"
+      onPress={goToDetail}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       <View style={styles.imageWrap}>
         {item.imageUri ? (
           <Image
@@ -50,7 +63,7 @@ export function SignalsEntityCard({ sectionSlug, item }: Props) {
           Appearances ×{item.appearanceCount}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -62,6 +75,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     overflow: 'hidden',
+  },
+  cardPressed: {
+    opacity: 0.9,
   },
   imageWrap: {
     width: '100%',
