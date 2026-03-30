@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +23,18 @@ import { queryKeys } from '@/lib/queryKeys';
 import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
+/** Lado máximo del cuadrado (px): evita imagen “alargada” en pantallas anchas. */
+const DETAIL_IMAGE_MAX_SIDE = 260;
+
+const DETAIL_HEADER_ES: Record<SignalEntityListSlug, string> = {
+  characters: 'Personaje',
+  locations: 'Lugar',
+  objects: 'Objeto',
+  events: 'Evento',
+  'life-context': 'Contexto',
+  feelings: 'Sentimiento',
+};
+
 function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
 }
@@ -30,7 +44,15 @@ export default function SignalsCatalogDetailScreen() {
   const { entity, id } = useLocalSearchParams<{ entity: string; id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const bg = gradients.background;
+
+  /** Cuadrado: ~70 % del ancho útil, con tope en px. */
+  const imageSidePx = useMemo(() => {
+    const rowInner = Math.max(0, windowWidth - spacing.xl * 2);
+    const side = Math.floor(rowInner * 0.7);
+    return Math.min(Math.max(side, 1), DETAIL_IMAGE_MAX_SIDE);
+  }, [windowWidth]);
 
   const slug = (entity ?? '').toLowerCase();
   const rawId = (id ?? '').trim();
@@ -58,6 +80,11 @@ export default function SignalsCatalogDetailScreen() {
         ? apiErrorMessage(detailQuery.error)
         : null;
 
+  const headerTitle =
+    slugOk && isSignalSlug(slug)
+      ? DETAIL_HEADER_ES[slug]
+      : 'Detalle';
+
   return (
     <LinearGradient
       colors={[...bg.colors]}
@@ -76,7 +103,7 @@ export default function SignalsCatalogDetailScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={styles.screenTitle} numberOfLines={1}>
-            Detail
+            {headerTitle}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -100,32 +127,44 @@ export default function SignalsCatalogDetailScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.hero}>
-              {view.imageUri ? (
-                <Image
-                  source={{ uri: view.imageUri }}
-                  style={styles.heroImg}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={styles.heroPlaceholder}>
-                  <Ionicons name="image-outline" size={48} color={colors.accentMuted} />
-                </View>
-              )}
+            <View style={styles.blockImage}>
+              <View
+                style={[
+                  styles.squareFrame,
+                  {
+                    width: imageSidePx,
+                    height: imageSidePx,
+                  },
+                ]}
+              >
+                {view.imageUri ? (
+                  <Image
+                    source={{ uri: view.imageUri }}
+                    style={styles.squareImage}
+                    contentFit="cover"
+                    contentPosition="center"
+                  />
+                ) : (
+                  <View style={styles.squarePlaceholder}>
+                    <Ionicons
+                      name="image-outline"
+                      size={40}
+                      color={colors.accentMuted}
+                    />
+                  </View>
+                )}
+              </View>
             </View>
-            <Text style={styles.title}>{view.title}</Text>
-            {view.subtitle ? (
-              <Text style={styles.desc}>{view.subtitle}</Text>
-            ) : null}
-            <Text style={styles.meta}>
-              Appearances ×{view.appearanceCount}
-            </Text>
-            <Pressable
-              style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.9 }]}
-              onPress={() => router.push(`/signals/${slug}/${rawId}/edit`)}
-            >
-              <Text style={styles.editBtnText}>Edit</Text>
-            </Pressable>
+            <View style={styles.blockData}>
+              <Text style={styles.title}>{view.title}</Text>
+              {view.subtitle ? (
+                <Text style={styles.desc}>{view.subtitle}</Text>
+              ) : null}
+              <Text style={styles.meta}>
+                ×{view.appearanceCount}{' '}
+                {view.appearanceCount === 1 ? 'aparición' : 'apariciones'}
+              </Text>
+            </View>
           </ScrollView>
         ) : null}
       </View>
@@ -165,23 +204,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: spacing.xxxl, gap: spacing.md },
-  hero: {
+  scrollContent: {
+    paddingBottom: spacing.xxxl,
+    flexGrow: 1,
+    gap: spacing.xl,
+  },
+  blockImage: {
     width: '100%',
-    aspectRatio: 1,
-    maxHeight: 280,
-    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  blockData: {
+    width: '100%',
+    gap: spacing.md,
+  },
+  /** Lado en px vía `imageSidePx` (máx. DETAIL_IMAGE_MAX_SIDE). */
+  squareFrame: {
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.28)',
   },
-  heroImg: { width: '100%', height: '100%' },
-  heroPlaceholder: {
+  squareImage: {
+    width: '100%',
+    height: '100%',
+  },
+  squarePlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.sizes.lg,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -198,20 +252,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     color: colors.danger,
     fontSize: typography.sizes.sm,
-  },
-  editBtn: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSubtle,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-  },
-  editBtnText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.accent,
   },
 });
