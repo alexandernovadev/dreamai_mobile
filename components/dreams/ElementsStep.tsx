@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -25,6 +30,10 @@ import {
   locationsService,
   type DreamElementsSuggestResponse,
 } from '@/services';
+import type { DreamSessionHydratedResponse } from '@/services/dreamSessions';
+import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
+import { queryKeys } from '@/lib/queryKeys';
+import type { SignalEntityListSlug } from '@/services/signalEntities';
 import type { SelectOption } from '@/components/ui';
 import {
   Button,
@@ -44,6 +53,35 @@ import { colors, radius, spacing, typography } from '@/theme';
 import { entityRefId } from '@/utils/entityRef';
 import { newKey } from '@/utils/key';
 
+/** Tras guardar elementos: hub + listas/detalle de catálogos tocados (sin `signals.all`). */
+function invalidateSignalsAfterElementSessionSave(
+  queryClient: QueryClient,
+  touched: ReadonlySet<SignalEntityListSlug>,
+  details: readonly { slug: SignalEntityListSlug; id: string }[],
+) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.signals.hub() });
+  for (const slug of touched) {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.signals.catalogList(slug),
+    });
+  }
+  for (const { slug, id } of details) {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.signals.catalogDetail(slug, id),
+    });
+  }
+}
+
+/** Tras create/update inline de una entidad de catálogo desde el editor. */
+function invalidateSignalsAfterCatalogWrite(
+  queryClient: QueryClient,
+  slug: SignalEntityListSlug,
+  id: string,
+) {
+  invalidateSignalsAfterElementSessionSave(queryClient, new Set([slug]), [
+    { slug, id },
+  ]);
+}
 
 /* TODO Estoy seguri qye este codigo es un esoagitasoo
 pero la AI lo hizo, y lo puedo optimizar mas 
@@ -150,6 +188,105 @@ type Props = {
   onSaved?: () => void;
   onError: (message: string, kind: 'network' | 'server') => void;
 };
+
+function buildRowsFromHydrated({
+  session,
+  hydrated,
+}: DreamSessionHydratedResponse): {
+  charRows: CharRow[];
+  locRows: LocRow[];
+  objRows: ObjRow[];
+  ctxRows: CtxRow[];
+  evRows: EventRow[];
+  feelRows: FeelingRow[];
+} {
+  const entities = session.analysis?.entities;
+  if (!entities) {
+    return {
+      charRows: [],
+      locRows: [],
+      objRows: [],
+      ctxRows: [],
+      evRows: [],
+      feelRows: [],
+    };
+  }
+
+  const charRows: CharRow[] = [];
+  for (const r of entities.characters ?? []) {
+    const id = entityRefId(r.characterId);
+    if (!id) continue;
+    const c = hydrated.characters[id];
+    if (c) {
+      charRows.push({ key: newKey(), t: 'existing', id: c.id, name: c.name });
+    }
+  }
+
+  const locRows: LocRow[] = [];
+  for (const r of entities.locations ?? []) {
+    const id = entityRefId(r.locationId);
+    if (!id) continue;
+    const x = hydrated.locations[id];
+    if (x) {
+      locRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
+    }
+  }
+
+  const objRows: ObjRow[] = [];
+  for (const r of entities.objects ?? []) {
+    const id = entityRefId(r.objectId);
+    if (!id) continue;
+    const x = hydrated.objects[id];
+    if (x) {
+      objRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
+    }
+  }
+
+  const ctxRows: CtxRow[] = [];
+  for (const r of entities.contextLife ?? []) {
+    const id = entityRefId(r.contextLifeId);
+    if (!id) continue;
+    const x = hydrated.contextLife[id];
+    if (x) {
+      ctxRows.push({ key: newKey(), t: 'existing', id: x.id, title: x.title });
+    }
+  }
+
+  const evRows: EventRow[] = [];
+  for (const r of entities.events ?? []) {
+    const id = entityRefId(r.eventId);
+    if (!id) continue;
+    const x = hydrated.events[id];
+    if (x) {
+      evRows.push({ key: newKey(), t: 'existing', id: x.id, label: x.label });
+    }
+  }
+
+  const feelRows: FeelingRow[] = [];
+  for (const r of entities.feelings ?? []) {
+    const id = entityRefId(r.feelingId);
+    if (!id) continue;
+    const x = hydrated.feelings[id];
+    if (x) {
+      feelRows.push({
+        key: newKey(),
+        id: x.id,
+        kind: x.kind as FeelingRow['kind'],
+        intensity: x.intensity,
+        notes: x.notes,
+      });
+    }
+  }
+
+  return {
+    charRows,
+    locRows,
+    objRows,
+    ctxRows,
+    evRows,
+    feelRows,
+  };
+}
 
 const LOC_SETTINGS: readonly LocationSetting[] = [
   'URBAN',
@@ -306,6 +443,45 @@ function mergeEventsFromAi(
 export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
+  const queryClient = useQueryClient();
+  const sid = sessionId?.trim() ?? '';
+
+  const hydratedQuery = useQuery({
+    queryKey: queryKeys.dreamSessions.hydrated(sid),
+    queryFn: () => dreamSessionsService.getHydrated(sid),
+    enabled: sid.length > 0,
+    refetchOnWindowFocus: false,
+  });
+
+  useLayoutEffect(() => {
+    if (!sid) return;
+    if (!hydratedQuery.data) {
+      setCharacters([]);
+      setLocations([]);
+      setObjects([]);
+      setContextRows([]);
+      setEvents([]);
+      setFeelings([]);
+      return;
+    }
+    const rows = buildRowsFromHydrated(hydratedQuery.data);
+    setCharacters(rows.charRows);
+    setLocations(rows.locRows);
+    setObjects(rows.objRows);
+    setContextRows(rows.ctxRows);
+    setEvents(rows.evRows);
+    setFeelings(rows.feelRows);
+  }, [sid, hydratedQuery.data]);
+
+  useEffect(() => {
+    if (!hydratedQuery.isError || !hydratedQuery.error) return;
+    const msg = apiErrorMessage(hydratedQuery.error);
+    const kind =
+      hydratedQuery.error instanceof ApiError && hydratedQuery.error.status === 0
+        ? 'network'
+        : 'server';
+    onErrorRef.current(msg, kind);
+  }, [hydratedQuery.isError, hydratedQuery.error]);
 
   const [saving, setSaving] = useState(false);
   const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
@@ -338,8 +514,11 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
   const [loadEv, setLoadEv] = useState(false);
 
   const [stepModal, setStepModal] = useState<StepModal>(null);
-  const [hydrating, setHydrating] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+
+  const hydrating =
+    hydratedQuery.isPending ||
+    (hydratedQuery.isFetching && !hydratedQuery.data);
 
   const runAiSuggest = useCallback(async () => {
     const sid = sessionId?.trim();
@@ -358,119 +537,6 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
     } finally {
       setAiLoading(false);
     }
-  }, [sessionId]);
-
-  useEffect(() => {
-    const sid = sessionId?.trim();
-    if (!sid) return;
-
-    let cancelled = false;
-    setHydrating(true);
-
-    void (async () => {
-      try {
-        const { session, hydrated } = await dreamSessionsService.getHydrated(sid);
-        const entities = session.analysis?.entities;
-        if (!entities) {
-          if (!cancelled) {
-            setCharacters([]);
-            setLocations([]);
-            setObjects([]);
-            setContextRows([]);
-            setEvents([]);
-            setFeelings([]);
-          }
-          return;
-        }
-
-        const charRows: CharRow[] = [];
-        for (const r of entities.characters ?? []) {
-          const id = entityRefId(r.characterId);
-          if (!id) continue;
-          const c = hydrated.characters[id];
-          if (c && !cancelled) {
-            charRows.push({ key: newKey(), t: 'existing', id: c.id, name: c.name });
-          }
-        }
-
-        const locRows: LocRow[] = [];
-        for (const r of entities.locations ?? []) {
-          const id = entityRefId(r.locationId);
-          if (!id) continue;
-          const x = hydrated.locations[id];
-          if (x && !cancelled) {
-            locRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
-          }
-        }
-
-        const objRows: ObjRow[] = [];
-        for (const r of entities.objects ?? []) {
-          const id = entityRefId(r.objectId);
-          if (!id) continue;
-          const x = hydrated.objects[id];
-          if (x && !cancelled) {
-            objRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
-          }
-        }
-
-        const ctxRows: CtxRow[] = [];
-        for (const r of entities.contextLife ?? []) {
-          const id = entityRefId(r.contextLifeId);
-          if (!id) continue;
-          const x = hydrated.contextLife[id];
-          if (x && !cancelled) {
-            ctxRows.push({ key: newKey(), t: 'existing', id: x.id, title: x.title });
-          }
-        }
-
-        const evRows: EventRow[] = [];
-        for (const r of entities.events ?? []) {
-          const id = entityRefId(r.eventId);
-          if (!id) continue;
-          const x = hydrated.events[id];
-          if (x && !cancelled) {
-            evRows.push({ key: newKey(), t: 'existing', id: x.id, label: x.label });
-          }
-        }
-
-        const feelRows: FeelingRow[] = [];
-        for (const r of entities.feelings ?? []) {
-          const id = entityRefId(r.feelingId);
-          if (!id) continue;
-          const x = hydrated.feelings[id];
-          if (x && !cancelled) {
-            feelRows.push({
-              key: newKey(),
-              id: x.id,
-              kind: x.kind as FeelingRow['kind'],
-              intensity: x.intensity,
-              notes: x.notes,
-            });
-          }
-        }
-
-        if (!cancelled) {
-          setCharacters(charRows);
-          setLocations(locRows);
-          setObjects(objRows);
-          setContextRows(ctxRows);
-          setEvents(evRows);
-          setFeelings(feelRows);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          const msg = apiErrorMessage(e);
-          const kind = e instanceof ApiError && e.status === 0 ? 'network' : 'server';
-          onErrorRef.current(msg, kind);
-        }
-      } finally {
-        if (!cancelled) setHydrating(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [sessionId]);
 
   const charIds = useMemo(() => {
@@ -720,6 +786,10 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
     }
     setSaving(true);
     try {
+      const touchedSignals = new Set<SignalEntityListSlug>();
+      const signalDetailPairs: { slug: SignalEntityListSlug; id: string }[] =
+        [];
+
       const characterIds: string[] = [];
       for (const row of characters) {
         if (row.t === 'existing') characterIds.push(row.id);
@@ -731,6 +801,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             archetype: row.archetype,
           });
           characterIds.push(c.id);
+          touchedSignals.add('characters');
+          signalDetailPairs.push({ slug: 'characters', id: c.id });
         }
       }
 
@@ -745,6 +817,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             setting: row.setting,
           });
           locationIds.push(c.id);
+          touchedSignals.add('locations');
+          signalDetailPairs.push({ slug: 'locations', id: c.id });
         }
       }
 
@@ -757,6 +831,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             description: row.description?.trim() || undefined,
           });
           objectIds.push(c.id);
+          touchedSignals.add('objects');
+          signalDetailPairs.push({ slug: 'objects', id: c.id });
         }
       }
 
@@ -769,6 +845,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             description: row.description?.trim() || undefined,
           });
           contextLifeIds.push(c.id);
+          touchedSignals.add('life-context');
+          signalDetailPairs.push({ slug: 'life-context', id: c.id });
         }
       }
 
@@ -782,6 +860,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
             dreamSessionId: sessionId,
           });
           eventIds.push(c.id);
+          touchedSignals.add('events');
+          signalDetailPairs.push({ slug: 'events', id: c.id });
         }
       }
 
@@ -797,6 +877,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           });
           feelingIds.push(row.id);
           nextFeelings.push(row);
+          touchedSignals.add('feelings');
+          signalDetailPairs.push({ slug: 'feelings', id: row.id });
         } else {
           const c = await feelingsService.create({
             kind: row.kind,
@@ -806,6 +888,8 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
           });
           feelingIds.push(c.id);
           nextFeelings.push({ ...row, id: c.id });
+          touchedSignals.add('feelings');
+          signalDetailPairs.push({ slug: 'feelings', id: c.id });
         }
       }
       setFeelings(nextFeelings);
@@ -819,10 +903,25 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         feelings: [...new Set(feelingIds)].map((id) => ({ feelingId: id })),
       };
 
-      await dreamSessionsService.update(sessionId, {
+      const updated = await dreamSessionsService.update(sessionId, {
         status: 'ELEMENTS',
         analysis: { entities },
       });
+      queryClient.setQueryData(
+        queryKeys.dreamSessions.detail(sessionId),
+        updated,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.hydrated(sessionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
+      invalidateSignalsAfterElementSessionSave(
+        queryClient,
+        touchedSignals,
+        signalDetailPairs,
+      );
       onSaved?.();
       showSuccessBanner('Elementos guardados');
     } catch (e) {
@@ -1492,6 +1591,7 @@ function CharacterEditModal({
   onApplied: (next: CharRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(row.t === 'existing');
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
@@ -1542,6 +1642,11 @@ function CharacterEditModal({
           isKnown,
           archetype,
         });
+        invalidateSignalsAfterCatalogWrite(
+          queryClient,
+          'characters',
+          row.id,
+        );
         onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
         onClose();
       } catch (e) {
@@ -1661,6 +1766,7 @@ function LocationEditModal({
   onApplied: (next: LocRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(row.t === 'existing');
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
@@ -1711,6 +1817,11 @@ function LocationEditModal({
           isFamiliar,
           setting,
         });
+        invalidateSignalsAfterCatalogWrite(
+          queryClient,
+          'locations',
+          row.id,
+        );
         onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
         onClose();
       } catch (e) {
@@ -1815,6 +1926,7 @@ function ObjectEditModal({
   onApplied: (next: ObjRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(row.t === 'existing');
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
@@ -1854,6 +1966,7 @@ function ObjectEditModal({
       setSaving(true);
       try {
         await dreamObjectsService.update(row.id, { name: n, description: d });
+        invalidateSignalsAfterCatalogWrite(queryClient, 'objects', row.id);
         onApplied({ key: row.key, t: 'existing', id: row.id, name: n });
         onClose();
       } catch (e) {
@@ -1944,6 +2057,7 @@ function EventEditModal({
   onApplied: (next: EventRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(row.t === 'existing');
   const [saving, setSaving] = useState(false);
   const [label, setLabel] = useState('');
@@ -1987,6 +2101,7 @@ function EventEditModal({
           description: d,
           dreamSessionId: sessionId,
         });
+        invalidateSignalsAfterCatalogWrite(queryClient, 'events', row.id);
         onApplied({ key: row.key, t: 'existing', id: row.id, label: n });
         onClose();
       } catch (e) {
@@ -2075,6 +2190,7 @@ function ContextEditModal({
   onApplied: (next: CtxRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(row.t === 'existing');
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
@@ -2114,6 +2230,11 @@ function ContextEditModal({
       setSaving(true);
       try {
         await contextLivesService.update(row.id, { title: n, description: d });
+        invalidateSignalsAfterCatalogWrite(
+          queryClient,
+          'life-context',
+          row.id,
+        );
         onApplied({ key: row.key, t: 'existing', id: row.id, title: n });
         onClose();
       } catch (e) {
@@ -2235,6 +2356,7 @@ function FeelingEditModal({
   onApplied: (next: FeelingRow) => void;
   onApiError: (e: unknown) => void;
 }) {
+  const queryClient = useQueryClient();
   const [kind, setKind] = useState<FeelingKind | null>(row.kind);
   const [useIntensity, setUseIntensity] = useState(row.intensity != null);
   const [intensity, setIntensity] = useState(row.intensity ?? 5);
@@ -2257,6 +2379,11 @@ function FeelingEditModal({
           intensity: payload.intensity,
           notes: payload.notes,
         });
+        invalidateSignalsAfterCatalogWrite(
+          queryClient,
+          'feelings',
+          row.id,
+        );
         onApplied({ ...row, ...payload });
         onClose();
       } catch (e) {

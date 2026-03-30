@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,9 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
 import { Modal } from '@/components/ui/Modal';
-import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
 import { queryKeys } from '@/lib/queryKeys';
-import { apiErrorMessage, dreamSessionsService, type DreamSession } from '@/services';
+import { apiErrorMessage, dreamSessionsService } from '@/services';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 /**
@@ -26,7 +25,6 @@ export default function DreamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const raw = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
-  const queryClient = useQueryClient();
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
 
@@ -45,13 +43,6 @@ export default function DreamDetailScreen() {
   const session = detailQuery.data ?? null;
   const loading = detailQuery.isPending;
   const error = detailQuery.error ? apiErrorMessage(detailQuery.error) : null;
-
-  const onDreamSaved = (next: DreamSession) => {
-    queryClient.setQueryData(queryKeys.dreamSessions.detail(next.id), next);
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
-    });
-  };
 
   if (!raw) {
     return null;
@@ -108,7 +99,6 @@ export default function DreamDetailScreen() {
               initialTimestamp={session.timestamp}
               initialDreamKind={session.dreamKind}
               initialDreamImages={session.dreamImages}
-              onSaved={onDreamSaved}
               onError={(message, kind) => setSaveError({ message, kind })}
             />
           ) : null}

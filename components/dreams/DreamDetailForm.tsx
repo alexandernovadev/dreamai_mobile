@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createElement, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -30,6 +31,8 @@ import {
   uploadDreamImageToCloudinary,
   type DreamSession,
 } from '@/services';
+import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import { colors, radius, spacing, typography } from '@/theme';
 
 const KIND_VARIANTS: ChipVariant[] = [
@@ -75,6 +78,7 @@ export function DreamDetailForm({
   onSaved,
   onError,
 }: DreamDetailFormProps) {
+  const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const thumbW = (Math.min(width - spacing.xl * 2, 400) - spacing.sm) / 2;
 
@@ -188,6 +192,16 @@ export function DreamDetailForm({
         dreamImages: images,
         status: 'STRUCTURED',
       });
+      queryClient.setQueryData(
+        queryKeys.dreamSessions.detail(sessionId),
+        session,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.hydrated(sessionId),
+      });
       onSaved?.(session);
       showSuccessBanner('Detalle guardado');
     } catch (e) {
@@ -198,7 +212,16 @@ export function DreamDetailForm({
     } finally {
       setSaving(false);
     }
-  }, [sessionId, ts, kinds, images, onError, onSaved, showSuccessBanner]);
+  }, [
+    queryClient,
+    sessionId,
+    ts,
+    kinds,
+    images,
+    onError,
+    onSaved,
+    showSuccessBanner,
+  ]);
 
   return (
     <KeyboardAvoidingScroll

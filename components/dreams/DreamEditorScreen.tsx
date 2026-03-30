@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import {
   ApiError,
   apiErrorMessage,
   dreamSessionsService,
+  type DreamSession,
 } from '@/services';
 
 const TABS = ['draft', 'elements', 'detail', 'thought'] as const;
@@ -51,15 +52,48 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [bootLoading, setBootLoading] = useState(mode === 'edit');
-  const [bootError, setBootError] = useState<string | null>(null);
+  const editSessionId = initialSessionId?.trim() ?? '';
+  const detailQuery = useQuery({
+    queryKey: queryKeys.dreamSessions.detail(editSessionId),
+    queryFn: () => dreamSessionsService.getOne(editSessionId),
+    enabled: mode === 'edit' && editSessionId.length > 0,
+    refetchOnWindowFocus: false,
+  });
+
+  /** Evita pisar borrador local si el detalle se invalida/refetch mientras editas. */
+  const hydratedFromQueryRef = useRef(false);
+
+  useEffect(() => {
+    hydratedFromQueryRef.current = false;
+  }, [editSessionId]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !detailQuery.data) return;
+    if (hydratedFromQueryRef.current) return;
+    hydratedFromQueryRef.current = true;
+    const s = detailQuery.data;
+    setSessionId(s.id);
+    setDraftText(s.rawNarrative);
+    setDetailTimestamp(s.timestamp);
+    setDetailKinds(s.dreamKind ?? []);
+    setDetailImages(s.dreamImages ?? []);
+    setUserThought(s.userThought ?? '');
+    setAiSummarize(s.aiSummarize);
+    setDraftSaved(true);
+  }, [mode, detailQuery.data]);
+
+  const bootLoading =
+    mode === 'edit' && editSessionId.length > 0 && detailQuery.isPending;
+  const bootError =
+    mode === 'edit' && editSessionId.length > 0 && detailQuery.isError
+      ? apiErrorMessage(detailQuery.error)
+      : null;
 
   const [activeTab, setActiveTab] = useState<TabId>('draft');
   const [draftSaved, setDraftSaved] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [draftError, setDraftError] = useState<string | undefined>();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<{
     message: string;
     kind: 'network' | 'server';
@@ -72,36 +106,45 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [aiSummarize, setAiSummarize] = useState<string | undefined>();
   const { message: draftSuccessMsg, show: showDraftSuccess } = useSuccessBanner();
 
-  useEffect(() => {
-    if (mode !== 'edit' || !initialSessionId) {
-      setBootLoading(false);
-      return;
-    }
-    let cancelled = false;
-    void dreamSessionsService
-      .getOne(initialSessionId)
-      .then((s) => {
-        if (cancelled) return;
-        setSessionId(s.id);
-        setDraftText(s.rawNarrative);
-        setDetailTimestamp(s.timestamp);
-        setDetailKinds(s.dreamKind ?? []);
-        setDetailImages(s.dreamImages ?? []);
-        setUserThought(s.userThought ?? '');
-        setAiSummarize(s.aiSummarize);
-        setDraftSaved(true);
-        setBootLoading(false);
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setBootError(apiErrorMessage(e));
-          setBootLoading(false);
-        }
+  type SaveDraftVars = { trimmed: string; existingId: string | null };
+
+  const saveDraftMutation = useMutation<DreamSession, unknown, SaveDraftVars>({
+    mutationFn: async ({ trimmed, existingId }) => {
+      const now = new Date();
+      if (existingId) {
+        return dreamSessionsService.update(existingId, {
+          rawNarrative: trimmed,
+          timestamp: now,
+          status: 'DRAFT',
+        });
+      }
+      return dreamSessionsService.create({
+        timestamp: now,
+        status: 'DRAFT',
+        rawNarrative: trimmed,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, initialSessionId]);
+    },
+    onSuccess: (saved) => {
+      setSessionId(saved.id);
+      setDetailTimestamp(saved.timestamp);
+      setDetailKinds(saved.dreamKind ?? []);
+      setDetailImages(saved.dreamImages ?? []);
+      setUserThought(saved.userThought ?? '');
+      setAiSummarize(saved.aiSummarize);
+      queryClient.setQueryData(queryKeys.dreamSessions.detail(saved.id), saved);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
+      setDraftSaved(true);
+      showDraftSuccess('Borrador guardado');
+    },
+    onError: (e) => {
+      const msg = apiErrorMessage(e);
+      const kind =
+        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+      setSaveError({ message: msg, kind });
+    },
+  });
 
   function onDraftTextChange(text: string) {
     setDraftText(text);
@@ -113,61 +156,14 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
     setActiveTab(tab);
   }
 
-  async function handleSaveDraft() {
+  function handleSaveDraft() {
     const trimmed = draftText.trim();
     if (!trimmed) {
       setDraftError('Escribe la narrativa del sueño antes de guardar.');
       return;
     }
     setDraftError(undefined);
-    setSaving(true);
-    try {
-      const now = new Date();
-      if (sessionId) {
-        const saved = await dreamSessionsService.update(sessionId, {
-          rawNarrative: trimmed,
-          timestamp: now,
-          status: 'DRAFT',
-        });
-        setDetailTimestamp(saved.timestamp);
-        setDetailKinds(saved.dreamKind ?? []);
-        setDetailImages(saved.dreamImages ?? []);
-        setUserThought(saved.userThought ?? '');
-        setAiSummarize(saved.aiSummarize);
-        queryClient.setQueryData(
-          queryKeys.dreamSessions.detail(saved.id),
-          saved,
-        );
-      } else {
-        const created = await dreamSessionsService.create({
-          timestamp: now,
-          status: 'DRAFT',
-          rawNarrative: trimmed,
-        });
-        setSessionId(created.id);
-        setDetailTimestamp(created.timestamp);
-        setDetailKinds(created.dreamKind ?? []);
-        setDetailImages(created.dreamImages ?? []);
-        setUserThought(created.userThought ?? '');
-        setAiSummarize(created.aiSummarize);
-        queryClient.setQueryData(
-          queryKeys.dreamSessions.detail(created.id),
-          created,
-        );
-      }
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
-      });
-      setDraftSaved(true);
-      showDraftSuccess('Borrador guardado');
-    } catch (e) {
-      const msg = apiErrorMessage(e);
-      const kind =
-        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
-      setSaveError({ message: msg, kind });
-    } finally {
-      setSaving(false);
-    }
+    saveDraftMutation.mutate({ trimmed, existingId: sessionId });
   }
 
   const title = mode === 'edit' ? 'Editar sueño' : 'Nuevo sueño';
@@ -199,9 +195,18 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         <View style={[styles.boot, { paddingTop: insets.top, paddingHorizontal: spacing.xl }]}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.danger} />
           <Text style={styles.bootErrText}>{bootError}</Text>
-          <Button variant="purple" onPress={() => router.back()}>
-            Volver
-          </Button>
+          <View style={styles.bootErrActions}>
+            <Button
+              variant="purple"
+              disabled={detailQuery.isFetching}
+              onPress={() => void detailQuery.refetch()}
+            >
+              Reintentar
+            </Button>
+            <Button variant="outline" onPress={() => router.back()}>
+              Volver
+            </Button>
+          </View>
         </View>
       </LinearGradient>
     );
@@ -300,9 +305,9 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                   <Button
                     variant="purple"
                     onPress={() => void handleSaveDraft()}
-                    disabled={saving}
+                    disabled={saveDraftMutation.isPending}
                   >
-                    {saving ? 'Guardando…' : 'Guardar borrador'}
+                    {saveDraftMutation.isPending ? 'Guardando…' : 'Guardar borrador'}
                   </Button>
                   {!draftSaved && (
                     <Text style={styles.hint}>
@@ -425,6 +430,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  bootErrActions: {
+    width: '100%',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
 
   header: {

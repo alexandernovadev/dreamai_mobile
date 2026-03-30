@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,8 @@ import {
   dreamSessionsService,
   type DreamSession,
 } from '@/services';
+import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import { colors, radius, spacing, typography } from '@/theme';
 
 type ThoughtPanel = 'ai' | 'thought';
@@ -35,6 +38,7 @@ export function ThoughtStep({
   onSaved,
   onError,
 }: ThoughtStepProps) {
+  const queryClient = useQueryClient();
   const [text, setText] = useState(initialUserThought ?? '');
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -70,6 +74,16 @@ export function ThoughtStep({
         userThought: text.trim(),
         status: 'THOUGHT',
       });
+      queryClient.setQueryData(
+        queryKeys.dreamSessions.detail(sessionId),
+        session,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.hydrated(sessionId),
+      });
       onSaved?.(session);
       showSuccessBanner('Reflexión guardada');
     } catch (e) {
@@ -80,7 +94,7 @@ export function ThoughtStep({
     } finally {
       setSaving(false);
     }
-  }, [sessionId, text, onError, onSaved, showSuccessBanner]);
+  }, [queryClient, sessionId, text, onError, onSaved, showSuccessBanner]);
 
   const handleSuggestThought = useCallback(async () => {
     setAiLoading(true);
@@ -94,6 +108,16 @@ export function ThoughtStep({
       const session = await dreamSessionsService.update(sessionId, {
         aiSummarize: t,
       });
+      queryClient.setQueryData(
+        queryKeys.dreamSessions.detail(sessionId),
+        session,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dreamSessions.hydrated(sessionId),
+      });
       onSaved?.(session);
       setSuggestion(t);
       showSuccessBanner('Lectura guardada');
@@ -105,7 +129,7 @@ export function ThoughtStep({
     } finally {
       setAiLoading(false);
     }
-  }, [sessionId, onError, onSaved, showSuccessBanner]);
+  }, [queryClient, sessionId, onError, onSaved, showSuccessBanner]);
 
   return (
     <KeyboardAvoidingScroll
