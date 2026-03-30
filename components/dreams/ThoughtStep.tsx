@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { KeyboardAvoidingScroll } from '@/components/ui/KeyboardAvoidingScroll';
 import { SuccessBanner } from '@/components/ui/SuccessBanner';
@@ -20,7 +11,7 @@ import {
   dreamSessionsService,
   type DreamSession,
 } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export type ThoughtStepProps = {
   sessionId: string;
@@ -32,7 +23,7 @@ export type ThoughtStepProps = {
 };
 
 /**
- * Paso final: reflexión escrita + lectura sugerida por IA (opcional, persistida en `aiSummarize`).
+ * Paso final: reflexión escrita + IA que genera y guarda `aiSummarize` automáticamente.
  */
 export function ThoughtStep({
   sessionId,
@@ -47,7 +38,6 @@ export function ThoughtStep({
   const [suggestion, setSuggestion] = useState<string | null>(
     initialAiSummarize?.trim() ? initialAiSummarize.trim() : null,
   );
-  const [savingAiNote, setSavingAiNote] = useState(false);
   const { message: successMsg, show: showSuccessBanner } = useSuccessBanner();
 
   const trimmed = text.trim();
@@ -89,10 +79,16 @@ export function ThoughtStep({
     try {
       const res = await dreamSessionsService.suggestThought(sessionId);
       const t = res.suggestion?.trim() ?? '';
-      setSuggestion(t.length > 0 ? t : null);
       if (!t) {
         onError('La IA no devolvió texto. Inténtalo de nuevo.', 'server');
+        return;
       }
+      const session = await dreamSessionsService.update(sessionId, {
+        aiSummarize: t,
+      });
+      onSaved?.(session);
+      setSuggestion(t);
+      showSuccessBanner('Lectura guardada');
     } catch (e) {
       const msg = apiErrorMessage(e);
       const kind =
@@ -101,37 +97,7 @@ export function ThoughtStep({
     } finally {
       setAiLoading(false);
     }
-  }, [sessionId, onError]);
-
-  const handleAppendSuggestion = useCallback(() => {
-    if (!suggestion?.trim()) return;
-    const add = suggestion.trim();
-    setText((prev) => {
-      const p = prev.trim();
-      if (!p) return add;
-      return `${p}\n\n—\n\n${add}`;
-    });
-    showSuccessBanner('Texto añadido a tu reflexión');
-  }, [suggestion, showSuccessBanner]);
-
-  const handleSaveAiNote = useCallback(async () => {
-    if (!suggestion?.trim()) return;
-    setSavingAiNote(true);
-    try {
-      const session = await dreamSessionsService.update(sessionId, {
-        aiSummarize: suggestion.trim(),
-      });
-      onSaved?.(session);
-      showSuccessBanner('Nota IA guardada');
-    } catch (e) {
-      const msg = apiErrorMessage(e);
-      const kind =
-        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
-      onError(msg, kind);
-    } finally {
-      setSavingAiNote(false);
-    }
-  }, [sessionId, suggestion, onError, onSaved, showSuccessBanner]);
+  }, [sessionId, onError, onSaved, showSuccessBanner]);
 
   return (
     <KeyboardAvoidingScroll
@@ -160,72 +126,32 @@ export function ThoughtStep({
       />
 
       <View style={styles.aiBlock}>
-        <Text style={styles.aiLabel}>Asistencia</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityHint="Genera una lectura sugerida con inteligencia artificial"
-          onPress={() => {
-            if (!aiLoading) void handleSuggestThought();
-          }}
-          disabled={aiLoading}
-          style={({ pressed }) => [
-            styles.aiBtnOuter,
-            pressed && !aiLoading && { opacity: 0.92 },
-            aiLoading && { opacity: 0.75 },
-          ]}
-        >
-          <LinearGradient
-            colors={['rgba(240, 200, 96, 0.45)', 'rgba(200, 140, 60, 0.25)', 'rgba(124, 92, 196, 0.2)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.aiGradient}
+        <View style={styles.aiHeaderRow}>
+          <Text style={styles.aiHeaderTitle}>Asistencia AI</Text>
+          <Button
+            variant="purple"
+            compact
+            loading={aiLoading}
+            onPress={() => void handleSuggestThought()}
+            accessibilityHint="Genera la lectura onírica con IA y la guarda automáticamente"
           >
-            {aiLoading ? (
-              <ActivityIndicator color="#fff6d0" style={styles.aiSpinner} />
-            ) : (
-              <View style={styles.aiIconRing}>
-                <Ionicons name="sparkles" size={26} color="#fff6d0" />
-              </View>
-            )}
-            <View style={styles.aiTexts}>
-              <Text style={styles.aiTitle}>Sugerencia con IA</Text>
-              <Text style={styles.aiSubtitle}>
-                Una lectura sugerida a partir de tu sueño y tu nota
-              </Text>
-            </View>
-            {!aiLoading ? (
-              <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.45)" />
-            ) : null}
-          </LinearGradient>
-        </Pressable>
-
-        {suggestion ? (
-          <View style={styles.suggestionWrap}>
-            <Text style={styles.suggestionLabel}>Lectura sugerida</Text>
-            <ScrollView
-              style={styles.suggestionScroll}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-            >
-              <Text style={styles.suggestionText}>{suggestion}</Text>
-            </ScrollView>
-            <View style={styles.suggestionActions}>
-              <Button
-                variant="outline"
-                onPress={() => void handleAppendSuggestion()}
-              >
-                Añadir a mi reflexión
-              </Button>
-              <Button
-                variant="purple"
-                onPress={() => void handleSaveAiNote()}
-                disabled={savingAiNote}
-              >
-                {savingAiNote ? 'Guardando…' : 'Guardar como nota IA'}
-              </Button>
-            </View>
-          </View>
-        ) : null}
+            Generar
+          </Button>
+        </View>
+        <View style={styles.aiDivider} />
+        <ScrollView
+          style={styles.aiReadingScroll}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+        >
+          {suggestion ? (
+            <Text style={styles.aiReadingText}>{suggestion}</Text>
+          ) : (
+            <Text style={styles.aiReadingPlaceholder}>
+              La lectura onírica aparecerá aquí.
+            </Text>
+          )}
+        </ScrollView>
       </View>
 
       <View style={styles.saveBlock}>
@@ -254,82 +180,42 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   aiBlock: {
-    gap: spacing.sm,
+    gap: 0,
   },
-  aiLabel: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  aiBtnOuter: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(240, 200, 96, 0.35)',
-  },
-  aiGradient: {
+  aiHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.md,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
   },
-  aiSpinner: {
-    marginLeft: spacing.sm,
-    marginRight: spacing.sm,
-  },
-  aiIconRing: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiTexts: {
+  aiHeaderTitle: {
     flex: 1,
-    gap: 4,
-  },
-  aiTitle: {
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  aiSubtitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  suggestionWrap: {
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-  },
-  suggestionLabel: {
-    fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semibold,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    color: colors.text,
+    letterSpacing: 0.2,
   },
-  suggestionScroll: {
-    maxHeight: 220,
+  aiDivider: {
+    height: 1,
+    backgroundColor: colors.borderSubtle,
+    marginBottom: spacing.md,
   },
-  suggestionText: {
+  aiReadingScroll: {
+    maxHeight: 320,
+  },
+  aiReadingText: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+    lineHeight: 26,
+  },
+  aiReadingPlaceholder: {
     fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+    fontWeight: typography.weights.regular,
+    color: colors.textMuted,
+    fontStyle: 'italic',
     lineHeight: 22,
-  },
-  suggestionActions: {
-    gap: spacing.sm,
   },
   saveBlock: {
     gap: spacing.md,
