@@ -1,13 +1,23 @@
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, gradients, spacing, typography } from '@/theme';
+import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
+import { Modal } from '@/components/ui/Modal';
+import { apiErrorMessage, dreamSessionsService, type DreamSession } from '@/services';
+import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 /**
- * Vista de sueño por id: `/dream/:id` (solo lectura / resumen).
- * El formulario compartido está en `/dream/edit/:id`.
+ * Detalle del sueño: edición de `timestamp`, `dreamKind`, `dreamImages` (subida Cloudinary).
+ * El flujo paso a paso está en `/dream/edit/:id`.
  */
 export default function DreamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +25,33 @@ export default function DreamDetailScreen() {
   const router = useRouter();
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
+
+  const [session, setSession] = useState<DreamSession | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<{
+    message: string;
+    kind: 'network' | 'server';
+  } | null>(null);
+
+  const load = useCallback(async () => {
+    if (!raw) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const s = await dreamSessionsService.getOne(raw);
+      setSession(s);
+    } catch (e) {
+      setError(apiErrorMessage(e));
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [raw]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (!raw) {
     return null;
@@ -25,82 +62,161 @@ export default function DreamDetailScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
-      <View style={[s.safe, { paddingTop: insets.top }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          hitSlop={12}
-          onPress={() => router.back()}
-          style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.5 }]}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </Pressable>
+    <>
+      <LinearGradient
+        colors={[...bg.colors]}
+        start={bg.start}
+        end={bg.end}
+        style={s.root}
+      >
+        <View style={[s.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          <View style={s.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.5 }]}
+            >
+              <Ionicons name="chevron-back" size={28} color={colors.text} />
+            </Pressable>
+            <View style={s.headerText}>
+              <Text style={s.title}>Detalle</Text>
+              <Text style={s.subtitle}>Fecha, tipo e imágenes</Text>
+            </View>
+          </View>
 
-        <View style={s.center}>
-          <Text style={s.idLabel}>Sueño</Text>
-          <Text style={s.idMono} selectable>
-            {raw}
-          </Text>
-          <Text style={s.placeholder}>Vista detalle — próximamente</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() =>
-              router.push({ pathname: '/dream/edit/[id]', params: { id: raw } })
-            }
-            style={({ pressed }) => [s.editLink, pressed && { opacity: 0.85 }]}
-          >
-            <Ionicons name="create-outline" size={18} color={colors.accent} />
-            <Text style={s.editLinkText}>Ir a editar</Text>
-          </Pressable>
+          {loading ? (
+            <View style={s.center}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={s.muted}>Cargando…</Text>
+            </View>
+          ) : error ? (
+            <View style={s.center}>
+              <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
+              <Text style={s.errorText}>{error}</Text>
+              <Pressable
+                onPress={() => void load()}
+                style={({ pressed }) => [s.retryBtn, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={s.retryText}>Reintentar</Text>
+              </Pressable>
+            </View>
+          ) : session ? (
+            <DreamDetailForm
+              sessionId={session.id}
+              initialTimestamp={session.timestamp}
+              initialDreamKind={session.dreamKind}
+              initialDreamImages={session.dreamImages}
+              onSaved={(next) => setSession(next)}
+              onError={(message, kind) => setSaveError({ message, kind })}
+            />
+          ) : null}
         </View>
-      </View>
-    </LinearGradient>
+      </LinearGradient>
+
+      <Modal
+        visible={saveError !== null}
+        onClose={() => setSaveError(null)}
+        title="No se pudo guardar"
+        closeLabel="Entendido"
+      >
+        {saveError ? (
+          <View style={s.modalBody}>
+            <View
+              style={[
+                s.errIconWrap,
+                saveError.kind === 'network' && s.errIconWrapNet,
+              ]}
+            >
+              <Ionicons
+                name={
+                  saveError.kind === 'network'
+                    ? 'cloud-offline-outline'
+                    : 'alert-circle-outline'
+                }
+                size={44}
+                color={
+                  saveError.kind === 'network' ? colors.info : colors.danger
+                }
+              />
+            </View>
+            <Text style={s.modalMsg}>{saveError.message}</Text>
+          </View>
+        ) : null}
+      </Modal>
+    </>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: spacing.xl },
-  backBtn: { marginTop: spacing.sm, padding: spacing.xs, alignSelf: 'flex-start' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md },
-  idLabel: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  idMono: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    fontFamily: 'monospace',
-  },
-  placeholder: {
-    fontSize: typography.sizes.md,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  editLink: {
+  header: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  backBtn: { marginLeft: -spacing.xs, padding: spacing.xs },
+  headerText: { flex: 1 },
+  title: {
+    fontSize: typography.sizes.xxl,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.lg,
+    gap: spacing.md,
+    paddingVertical: spacing.xxxl,
+  },
+  muted: { fontSize: typography.sizes.sm, color: colors.textMuted },
+  errorText: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: spacing.lg,
+  },
+  retryBtn: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(124, 92, 196, 0.35)',
-    backgroundColor: 'rgba(124, 92, 196, 0.1)',
+    backgroundColor: 'rgba(124, 92, 196, 0.12)',
   },
-  editLinkText: {
+  retryText: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.semibold,
     color: colors.accent,
+  },
+  modalBody: { alignItems: 'center', gap: spacing.md },
+  errIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(232, 93, 106, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(232, 93, 106, 0.25)',
+  },
+  errIconWrapNet: {
+    backgroundColor: 'rgba(109, 179, 255, 0.12)',
+    borderColor: 'rgba(109, 179, 255, 0.28)',
+  },
+  modalMsg: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

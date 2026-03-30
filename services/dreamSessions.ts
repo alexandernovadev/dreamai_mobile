@@ -69,6 +69,7 @@ export type CreateDreamSessionInput = {
   status?: DreamSessionStatus;
   rawNarrative?: string;
   dreamKind?: string[];
+  dreamImages?: string[];
 };
 
 /** Refs que acepta el backend en `analysis.entities`. */
@@ -101,6 +102,7 @@ function stripCreate(
   if (input.status !== undefined) out.status = input.status;
   if (input.rawNarrative !== undefined) out.rawNarrative = input.rawNarrative;
   if (input.dreamKind !== undefined) out.dreamKind = input.dreamKind;
+  if (input.dreamImages !== undefined) out.dreamImages = input.dreamImages;
   return out;
 }
 
@@ -114,6 +116,7 @@ function stripUpdate(
   if (input.status !== undefined) out.status = input.status;
   if (input.rawNarrative !== undefined) out.rawNarrative = input.rawNarrative;
   if (input.dreamKind !== undefined) out.dreamKind = input.dreamKind;
+  if (input.dreamImages !== undefined) out.dreamImages = input.dreamImages;
   if (input.analysis !== undefined) out.analysis = input.analysis;
   return out;
 }

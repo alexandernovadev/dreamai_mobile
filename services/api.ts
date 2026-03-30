@@ -71,6 +71,37 @@ async function request<T>(
   return (await res.json()) as T;
 }
 
+/** POST multipart (p. ej. subida a Cloudinary). No fijar `Content-Type`: el runtime añade el boundary. */
+export async function postFormData<T>(path: string, formData: FormData): Promise<T> {
+  const url = `${API_BASE_URL}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: formData,
+    });
+  } catch {
+    throw new ApiError(0, 'Network error');
+  }
+
+  if (!res.ok) {
+    let parsed: unknown;
+    try {
+      parsed = await res.json();
+    } catch {
+      parsed = await res.text();
+    }
+    throw new ApiError(res.status, parsed);
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  return (await res.json()) as T;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body: unknown) => request<T>('POST', path, body),

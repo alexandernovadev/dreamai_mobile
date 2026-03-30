@@ -8,6 +8,7 @@ import { colors, gradients, radius, spacing, typography } from '@/theme';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { TextareaFullHeight } from '@/components/ui/TextareaFullHeight';
+import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
 import { ElementsStep } from '@/components/dreams/ElementsStep';
 import {
   ApiError,
@@ -57,6 +58,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
     kind: 'network' | 'server';
   } | null>(null);
 
+  const [detailTimestamp, setDetailTimestamp] = useState<Date | undefined>();
+  const [detailKinds, setDetailKinds] = useState<string[]>([]);
+  const [detailImages, setDetailImages] = useState<string[]>([]);
+
   useEffect(() => {
     if (mode !== 'edit' || !initialSessionId) {
       setBootLoading(false);
@@ -69,6 +74,9 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         if (cancelled) return;
         setSessionId(s.id);
         setDraftText(s.rawNarrative);
+        setDetailTimestamp(s.timestamp);
+        setDetailKinds(s.dreamKind ?? []);
+        setDetailImages(s.dreamImages ?? []);
         setDraftSaved(true);
         setBootLoading(false);
       })
@@ -104,11 +112,14 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
     try {
       const now = new Date();
       if (sessionId) {
-        await dreamSessionsService.update(sessionId, {
+        const saved = await dreamSessionsService.update(sessionId, {
           rawNarrative: trimmed,
           timestamp: now,
           status: 'DRAFT',
         });
+        setDetailTimestamp(saved.timestamp);
+        setDetailKinds(saved.dreamKind ?? []);
+        setDetailImages(saved.dreamImages ?? []);
       } else {
         const created = await dreamSessionsService.create({
           timestamp: now,
@@ -116,6 +127,9 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
           rawNarrative: trimmed,
         });
         setSessionId(created.id);
+        setDetailTimestamp(created.timestamp);
+        setDetailKinds(created.dreamKind ?? []);
+        setDetailImages(created.dreamImages ?? []);
       }
       setDraftSaved(true);
     } catch (e) {
@@ -282,11 +296,28 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               </View>
             ) : null}
 
-            {activeTab === 'detail' && (
-              <View style={styles.placeholderWrap}>
-                <Text style={styles.placeholder}>Detalle — próximo paso</Text>
+            {activeTab === 'detail' && draftSaved && sessionId ? (
+              <View style={styles.detailPanel}>
+                <DreamDetailForm
+                  sessionId={sessionId}
+                  initialTimestamp={detailTimestamp}
+                  initialDreamKind={detailKinds}
+                  initialDreamImages={detailImages}
+                  onSaved={(s) => {
+                    setDetailTimestamp(s.timestamp);
+                    setDetailKinds(s.dreamKind ?? []);
+                    setDetailImages(s.dreamImages ?? []);
+                  }}
+                  onError={(message, kind) => setSaveError({ message, kind })}
+                />
               </View>
-            )}
+            ) : activeTab === 'detail' ? (
+              <View style={styles.placeholderWrap}>
+                <Text style={styles.placeholder}>
+                  Guarda el borrador para editar fecha, tipos e imágenes.
+                </Text>
+              </View>
+            ) : null}
 
             {activeTab === 'thought' && (
               <View style={styles.placeholderWrap}>
@@ -442,6 +473,10 @@ const styles = StyleSheet.create({
   placeholder: {
     fontSize: typography.sizes.md,
     color: colors.textMuted,
+  },
+  detailPanel: {
+    flex: 1,
+    minHeight: 0,
   },
 
   errorModalBody: {
