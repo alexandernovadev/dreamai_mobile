@@ -127,10 +127,37 @@ function stripUpdate(
 /** Hint de idioma para la IA (salida alineada con la app en español). */
 export const DEFAULT_AI_SUGGEST_LOCALE = 'es';
 
+/** Respuesta de `GET /dream-sessions/:id/hydrated`. */
+export type DreamSessionHydratedMaps = {
+  characters: Record<string, { id: string; name: string }>;
+  locations: Record<string, { id: string; name: string }>;
+  objects: Record<string, { id: string; name: string }>;
+  contextLife: Record<string, { id: string; title: string }>;
+  events: Record<string, { id: string; label: string }>;
+  feelings: Record<
+    string,
+    { id: string; kind: string; intensity?: number; notes?: string }
+  >;
+};
+
+export type DreamSessionHydratedResponse = {
+  session: DreamSession;
+  hydrated: DreamSessionHydratedMaps;
+};
+
 export const dreamSessionsService = {
   async getOne(id: string): Promise<DreamSession> {
     const raw = await api.get<ApiDreamSession>(`/dream-sessions/${id}`);
     return revive(raw);
+  },
+
+  /** Una petición: sesión + mapas de catálogo por id (batch en servidor). */
+  async getHydrated(id: string): Promise<DreamSessionHydratedResponse> {
+    const raw = await api.get<{
+      session: ApiDreamSession;
+      hydrated: DreamSessionHydratedMaps;
+    }>(`/dream-sessions/${id}/hydrated`);
+    return { session: revive(raw.session), hydrated: raw.hydrated };
   },
 
   async list(params: QueryDreamSessionsParams = {}): Promise<Paginated<DreamSession>> {

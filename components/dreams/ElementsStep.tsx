@@ -369,7 +369,7 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
 
     void (async () => {
       try {
-        const session = await dreamSessionsService.getOne(sid);
+        const { session, hydrated } = await dreamSessionsService.getHydrated(sid);
         const entities = session.analysis?.entities;
         if (!entities) {
           if (!cancelled) {
@@ -387,13 +387,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.characters ?? []) {
           const id = entityRefId(r.characterId);
           if (!id) continue;
-          try {
-            const c = await charactersService.getOne(id);
-            if (!cancelled) {
-              charRows.push({ key: newKey(), t: 'existing', id: c.id, name: c.name });
-            }
-          } catch {
-            /* catálogo borrado o id inválido */
+          const c = hydrated.characters[id];
+          if (c && !cancelled) {
+            charRows.push({ key: newKey(), t: 'existing', id: c.id, name: c.name });
           }
         }
 
@@ -401,13 +397,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.locations ?? []) {
           const id = entityRefId(r.locationId);
           if (!id) continue;
-          try {
-            const x = await locationsService.getOne(id);
-            if (!cancelled) {
-              locRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
-            }
-          } catch {
-            /* skip */
+          const x = hydrated.locations[id];
+          if (x && !cancelled) {
+            locRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
           }
         }
 
@@ -415,13 +407,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.objects ?? []) {
           const id = entityRefId(r.objectId);
           if (!id) continue;
-          try {
-            const x = await dreamObjectsService.getOne(id);
-            if (!cancelled) {
-              objRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
-            }
-          } catch {
-            /* skip */
+          const x = hydrated.objects[id];
+          if (x && !cancelled) {
+            objRows.push({ key: newKey(), t: 'existing', id: x.id, name: x.name });
           }
         }
 
@@ -429,13 +417,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.contextLife ?? []) {
           const id = entityRefId(r.contextLifeId);
           if (!id) continue;
-          try {
-            const x = await contextLivesService.getOne(id);
-            if (!cancelled) {
-              ctxRows.push({ key: newKey(), t: 'existing', id: x.id, title: x.title });
-            }
-          } catch {
-            /* skip */
+          const x = hydrated.contextLife[id];
+          if (x && !cancelled) {
+            ctxRows.push({ key: newKey(), t: 'existing', id: x.id, title: x.title });
           }
         }
 
@@ -443,13 +427,9 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.events ?? []) {
           const id = entityRefId(r.eventId);
           if (!id) continue;
-          try {
-            const x = await dreamEventsService.getOne(id);
-            if (!cancelled) {
-              evRows.push({ key: newKey(), t: 'existing', id: x.id, label: x.label });
-            }
-          } catch {
-            /* skip */
+          const x = hydrated.events[id];
+          if (x && !cancelled) {
+            evRows.push({ key: newKey(), t: 'existing', id: x.id, label: x.label });
           }
         }
 
@@ -457,19 +437,15 @@ export function ElementsStep({ sessionId, onSaved, onError }: Props) {
         for (const r of entities.feelings ?? []) {
           const id = entityRefId(r.feelingId);
           if (!id) continue;
-          try {
-            const x = await feelingsService.getOne(id);
-            if (!cancelled) {
-              feelRows.push({
-                key: newKey(),
-                id: x.id,
-                kind: x.kind,
-                intensity: x.intensity,
-                notes: x.notes,
-              });
-            }
-          } catch {
-            /* skip */
+          const x = hydrated.feelings[id];
+          if (x && !cancelled) {
+            feelRows.push({
+              key: newKey(),
+              id: x.id,
+              kind: x.kind as FeelingRow['kind'],
+              intensity: x.intensity,
+              notes: x.notes,
+            });
           }
         }
 
