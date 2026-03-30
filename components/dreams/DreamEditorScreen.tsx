@@ -409,6 +409,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
     marginBottom: spacing.md,
+    paddingTop: spacing.md,
   },
   backBtn: { marginLeft: -spacing.xs, padding: spacing.xs },
   headerText: { flex: 1 },
