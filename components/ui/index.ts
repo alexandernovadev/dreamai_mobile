@@ -23,3 +23,5 @@ export { Textarea } from './Textarea';
 export type { TextareaProps } from './Textarea';
 export { TextareaFullHeight } from './TextareaFullHeight';
 export type { TextareaFullHeightProps } from './TextareaFullHeight';
+export { WebDateInput } from './WebDateInput';
+export type { WebDateInputProps } from './WebDateInput';

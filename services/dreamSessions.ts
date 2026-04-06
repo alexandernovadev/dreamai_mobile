@@ -1,3 +1,4 @@
+import { localCalendarDayBoundsUtcIso } from '@/lib/dreamSummarizeLocalRange';
 import { api } from './api';
 import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 
@@ -136,6 +137,12 @@ export type SummarizeRecentLimit = 5 | 10 | 15 | 20;
 export type DreamRecentSummarizeResponse = {
   schemaVersion: number;
   summary: string;
+  /** Sueños que cumplen el criterio (últimos N o total en rango en BD). */
+  count: number;
+  /** Con narrativa enviados a la IA. */
+  withNarrativeCount: number;
+  /** Solo rango: había más en BD que el tope enviado a la IA. */
+  capped?: boolean;
 };
 
 export type DreamThoughtSuggestResponse = {
@@ -267,16 +274,34 @@ export const dreamSessionsService = {
     );
   },
 
-  /** Últimos N sueños con narrativa → resumen de patrones (IA; no persiste). */
+  /**
+   * Resumen de patrones (IA; no persiste).
+   * Modo cantidad: `limit` (últimos N por **fecha del sueño**).
+   * Modo fechas: `dreamDateFrom`/`dreamDateTo` + límites ISO del **día calendario local** del dispositivo.
+   */
   async summarizeRecent(params?: {
     limit?: SummarizeRecentLimit;
+    dreamDateFrom?: string;
+    dreamDateTo?: string;
   }): Promise<DreamRecentSummarizeResponse> {
+    const body: Record<string, unknown> = {
+      locale: DEFAULT_AI_SUGGEST_LOCALE,
+    };
+    if (params?.dreamDateFrom != null && params?.dreamDateTo != null) {
+      const { timestampStart, timestampEnd } = localCalendarDayBoundsUtcIso(
+        params.dreamDateFrom,
+        params.dreamDateTo,
+      );
+      body.dreamDateFrom = params.dreamDateFrom;
+      body.dreamDateTo = params.dreamDateTo;
+      body.timestampStart = timestampStart;
+      body.timestampEnd = timestampEnd;
+    } else if (params?.limit != null) {
+      body.limit = params.limit;
+    }
     return api.post<DreamRecentSummarizeResponse>(
       '/dream-sessions/ai/summarize-recent',
-      {
-        locale: DEFAULT_AI_SUGGEST_LOCALE,
-        ...(params?.limit != null ? { limit: params.limit } : {}),
-      },
+      body,
     );
   },
 };
