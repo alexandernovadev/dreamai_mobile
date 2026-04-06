@@ -7,7 +7,12 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RowItem = {
-  href: '/more/alerts' | '/more/totem' | '/more/audio-cues' | '/more/catalog';
+  href:
+    | '/more/alerts'
+    | '/more/totem'
+    | '/more/audio-cues'
+    | '/more/catalog'
+    | '/more/system-info';
   label: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,6 +20,13 @@ type RowItem = {
 };
 
 const TOOLS: RowItem[] = [
+  {
+    href: '/more/system-info',
+    label: 'Información del sistema',
+    description: 'Versión del cliente, API y fechas de build',
+    icon: 'information-circle-outline',
+    iconColor: '#9CA3AF',
+  },
   {
     href: '/more/alerts',
     label: 'Alertas',

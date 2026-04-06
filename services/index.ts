@@ -82,6 +82,7 @@ export {
   type SignalHubCardItem,
 } from './signalsHub';
 export type { DreamAppearances } from './dreamAppearances';
+export { fetchBackendMeta, type BackendMeta } from './meta';
 export {
   fetchEntityListPage,
   ENTITY_CATALOG_PAGE_SIZE,
