@@ -5,7 +5,7 @@ import { buildQuery, type Paginated, type PaginatedMeta } from './query';
 /** Alineado con `FeelingKind` del backend. */
 export type FeelingKind =
   | 'AWE'
-  | 'RAPTURE'
+  | 'PENA'
   | 'BOREDOM'
   | 'CALM'
   | 'CONFUSION'
@@ -106,7 +106,7 @@ export const feelingsService = {
 /** Opciones para `Select` (etiquetas en español, alineadas al back). */
 export const FEELING_KIND_OPTIONS: { value: FeelingKind; label: string }[] = [
   { value: 'AWE', label: 'Asombro' },
-  { value: 'RAPTURE', label: 'Embelesamiento' },
+  { value: 'PENA', label: 'Pena' },
   { value: 'BOREDOM', label: 'Aburrimiento' },
   { value: 'CALM', label: 'Calma' },
   { value: 'CONFUSION', label: 'Confusión' },

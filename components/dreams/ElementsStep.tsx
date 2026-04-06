@@ -2290,7 +2290,6 @@ function FeelingCreateModal({
   }) => void;
 }) {
   const [kind, setKind] = useState<FeelingKind | null>(null);
-  const [useIntensity, setUseIntensity] = useState(false);
   const [intensity, setIntensity] = useState(5);
   const [notes, setNotes] = useState('');
 
@@ -2306,7 +2305,7 @@ function FeelingCreateModal({
         if (!kind) return;
         onSubmit({
           kind,
-          intensity: useIntensity ? intensity : undefined,
+          intensity,
           notes: notes.trim() || undefined,
         });
       }}
@@ -2319,21 +2318,14 @@ function FeelingCreateModal({
         placeholder="Elige una emoción"
         modalTitle="Emoción"
       />
-      <Switch
-        label="Indicar intensidad (0–10)"
-        value={useIntensity}
-        onValueChange={setUseIntensity}
+      <Slider
+        label="Intensidad (0–10)"
+        value={intensity}
+        onValueChange={setIntensity}
+        minimumValue={0}
+        maximumValue={10}
+        step={1}
       />
-      {useIntensity ? (
-        <Slider
-          label="Intensidad"
-          value={intensity}
-          onValueChange={setIntensity}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-        />
-      ) : null}
       <Input
         label="Notas (opcional)"
         value={notes}
@@ -2358,7 +2350,6 @@ function FeelingEditModal({
 }) {
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<FeelingKind | null>(row.kind);
-  const [useIntensity, setUseIntensity] = useState(row.intensity != null);
   const [intensity, setIntensity] = useState(row.intensity ?? 5);
   const [notes, setNotes] = useState(row.notes ?? '');
   const [saving, setSaving] = useState(false);
@@ -2367,7 +2358,7 @@ function FeelingEditModal({
     if (!kind) return;
     const payload = {
       kind,
-      intensity: useIntensity ? intensity : undefined,
+      intensity,
       notes: notes.trim() || undefined,
     };
     if (row.id) {
@@ -2415,21 +2406,14 @@ function FeelingEditModal({
         placeholder="Elige una emoción"
         modalTitle="Emoción"
       />
-      <Switch
-        label="Indicar intensidad (0–10)"
-        value={useIntensity}
-        onValueChange={setUseIntensity}
+      <Slider
+        label="Intensidad (0–10)"
+        value={intensity}
+        onValueChange={setIntensity}
+        minimumValue={0}
+        maximumValue={10}
+        step={1}
       />
-      {useIntensity ? (
-        <Slider
-          label="Intensidad"
-          value={intensity}
-          onValueChange={setIntensity}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-        />
-      ) : null}
       <Input
         label="Notas (opcional)"
         value={notes}
