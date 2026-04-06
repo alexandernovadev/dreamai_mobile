@@ -5,12 +5,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
 import { Button } from '@/components/ui/Button';
-import { apiErrorMessage, dreamSessionsService } from '@/services';
+import { Select, type SelectOption } from '@/components/ui';
+import {
+  apiErrorMessage,
+  dreamSessionsService,
+  type SummarizeRecentLimit,
+} from '@/services';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
+
+const LIMIT_OPTIONS: SelectOption[] = [5, 10, 15, 20].map((n) => ({
+  value: String(n),
+  label: `${n} sueños`,
+}));
 
 export default function SummarizeScreen() {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
+  const [limitChoice, setLimitChoice] = useState<string>('10');
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,7 +90,8 @@ export default function SummarizeScreen() {
     setError(null);
     setLoading(true);
     try {
-      const res = await dreamSessionsService.summarizeRecent();
+      const limit = Number(limitChoice) as SummarizeRecentLimit;
+      const res = await dreamSessionsService.summarizeRecent({ limit });
       setSummary(res.summary);
     } catch (e) {
       setSummary(null);
@@ -87,7 +99,7 @@ export default function SummarizeScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [limitChoice]);
 
   return (
     <LinearGradient
@@ -108,10 +120,20 @@ export default function SummarizeScreen() {
           <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
           <Text style={styles.title}>Summarize</Text>
           <Text style={styles.subtitle}>
-            Toma tus últimos 10 sueños con narrativa y muestra patrones que se repiten, sin
-            guardar nada en el servidor.
+            Toma tus últimos sueños con narrativa (elige cuántos abajo) y muestra patrones que se
+            repiten, sin guardar nada en el servidor.
           </Text>
         </View>
+
+        <Select
+          label="Sueños a incluir"
+          options={LIMIT_OPTIONS}
+          value={limitChoice}
+          onValueChange={setLimitChoice}
+          placeholder="Cantidad"
+          modalTitle="Cantidad de sueños"
+          disabled={loading}
+        />
 
         <Button
           onPress={() => void onSummarize()}
