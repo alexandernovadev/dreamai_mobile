@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Markdown from 'react-native-markdown-display';
 import { Button } from '@/components/ui/Button';
 import { apiErrorMessage, dreamSessionsService } from '@/services';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
@@ -13,6 +14,66 @@ export default function SummarizeScreen() {
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const markdownStyles = useMemo(
+    () => ({
+      body: {
+        color: colors.text,
+        fontSize: typography.sizes.md,
+        lineHeight: Math.round(typography.sizes.md * 1.55),
+      },
+      heading2: {
+        color: colors.accent,
+        fontSize: typography.sizes.lg,
+        fontWeight: typography.weights.bold,
+        marginTop: spacing.lg,
+        marginBottom: spacing.sm,
+      },
+      paragraph: {
+        marginTop: 0,
+        marginBottom: spacing.sm,
+        color: colors.text,
+        fontSize: typography.sizes.md,
+        lineHeight: Math.round(typography.sizes.md * 1.55),
+      },
+      bullet_list: {
+        marginTop: spacing.xs,
+        marginBottom: spacing.sm,
+      },
+      ordered_list: {
+        marginTop: spacing.xs,
+        marginBottom: spacing.sm,
+      },
+      list_item: {
+        marginBottom: spacing.xs,
+        color: colors.text,
+        fontSize: typography.sizes.md,
+        lineHeight: Math.round(typography.sizes.md * 1.55),
+      },
+      bullet_list_icon: {
+        color: colors.accentMuted,
+        fontSize: typography.sizes.md,
+      },
+      strong: {
+        color: colors.textSecondary,
+        fontWeight: typography.weights.semibold,
+      },
+      em: {
+        color: colors.textMuted,
+        fontStyle: 'italic' as const,
+      },
+      blockquote: {
+        backgroundColor: 'rgba(124, 92, 196, 0.1)',
+        borderLeftColor: colors.accent,
+        borderLeftWidth: 3,
+        paddingLeft: spacing.md,
+        paddingVertical: spacing.sm,
+        marginVertical: spacing.sm,
+        borderRadius: radius.sm,
+      },
+    }),
+    [],
+  );
 
   const onSummarize = useCallback(async () => {
     setError(null);
@@ -70,7 +131,9 @@ export default function SummarizeScreen() {
         {summary ? (
           <View style={styles.resultCard}>
             <Text style={styles.resultLabel}>Resumen</Text>
-            <Text style={styles.resultBody}>{summary}</Text>
+            <Markdown style={markdownStyles} mergeStyle>
+              {summary}
+            </Markdown>
           </View>
         ) : null}
       </ScrollView>
@@ -121,13 +184,8 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
     color: colors.accent,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  resultBody: {
-    fontSize: typography.sizes.md,
-    color: colors.text,
-    lineHeight: 24,
   },
 });
