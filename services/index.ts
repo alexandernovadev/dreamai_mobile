@@ -30,6 +30,7 @@ export {
   type SuggestedObjectFromAi,
   type SuggestedEventFromAi,
   type DreamThoughtSuggestResponse,
+  type DreamRecentSummarizeResponse,
   type DreamAnalyticsOverview,
   type DreamAnalyticsCatalogTotals,
   type DreamAnalyticsLucidityBin,

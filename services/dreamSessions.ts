@@ -131,6 +131,11 @@ function stripUpdate(
 export const DEFAULT_AI_SUGGEST_LOCALE = 'es';
 
 /** Respuesta de `POST /dream-sessions/:id/ai/suggest-thought`. */
+export type DreamRecentSummarizeResponse = {
+  schemaVersion: number;
+  summary: string;
+};
+
 export type DreamThoughtSuggestResponse = {
   schemaVersion: number;
   dreamSessionId: string;
@@ -256,6 +261,14 @@ export const dreamSessionsService = {
   async suggestThought(sessionId: string): Promise<DreamThoughtSuggestResponse> {
     return api.post<DreamThoughtSuggestResponse>(
       `/dream-sessions/${sessionId}/ai/suggest-thought`,
+      { locale: DEFAULT_AI_SUGGEST_LOCALE },
+    );
+  },
+
+  /** Últimos 6 sueños con narrativa → resumen de patrones (IA; no persiste). */
+  async summarizeRecent(): Promise<DreamRecentSummarizeResponse> {
+    return api.post<DreamRecentSummarizeResponse>(
+      '/dream-sessions/ai/summarize-recent',
       { locale: DEFAULT_AI_SUGGEST_LOCALE },
     );
   },
