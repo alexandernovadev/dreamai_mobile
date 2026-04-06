@@ -265,7 +265,7 @@ export const dreamSessionsService = {
     );
   },
 
-  /** Últimos 6 sueños con narrativa → resumen de patrones (IA; no persiste). */
+  /** Últimos 10 sueños con narrativa → resumen de patrones (IA; no persiste). */
   async summarizeRecent(): Promise<DreamRecentSummarizeResponse> {
     return api.post<DreamRecentSummarizeResponse>(
       '/dream-sessions/ai/summarize-recent',

@@ -108,7 +108,7 @@ export default function SummarizeScreen() {
           <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
           <Text style={styles.title}>Summarize</Text>
           <Text style={styles.subtitle}>
-            Toma tus últimos 6 sueños con narrativa y muestra patrones que se repiten, sin
+            Toma tus últimos 10 sueños con narrativa y muestra patrones que se repiten, sin
             guardar nada en el servidor.
           </Text>
         </View>
