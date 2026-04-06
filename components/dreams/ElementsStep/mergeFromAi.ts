@@ -18,7 +18,7 @@ function mergeBase<TRow extends { key: string; t: 'existing' | 'new'; source?: '
   const existingIds = new Set(
     base
       .filter((r): r is Extract<TRow, { t: 'existing' }> => r.t === 'existing')
-      .map((r) => (r as { id: string }).id),
+      .map((r) => (r as unknown as { id: string }).id),
   );
   return { base, existingIds };
 }
