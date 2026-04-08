@@ -281,10 +281,7 @@ export default function SummarizeScreen() {
         <View style={styles.header}>
           <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
           <Text style={styles.title}>Summarize</Text>
-          <Text style={styles.subtitle}>
-            Patrones entre sueños con IA. Ajusta filtros en el panel y genera el resumen; no se guarda
-            en el servidor.
-          </Text>
+       
         </View>
 
         <Pressable
@@ -377,16 +374,13 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: spacing.sm,
+    display:'flex',
+    flexDirection:'row'
   },
   title: {
     fontSize: typography.sizes.xxl,
     fontWeight: typography.weights.bold,
     color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.md,
-    color: colors.textMuted,
-    lineHeight: 22,
   },
   filterCard: {
     flexDirection: 'row',
