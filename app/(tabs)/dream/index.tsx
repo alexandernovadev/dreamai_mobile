@@ -19,7 +19,6 @@ import { queryKeys } from '@/lib/queryKeys';
 import {
   apiErrorMessage,
   dreamSessionsService,
-  type DreamSession,
   type DreamSessionStatus,
 } from '@/services';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
@@ -85,7 +84,7 @@ export default function DreamListScreen() {
   }
 
   function goView(id: string) {
-    router.push({ pathname: '/dream/[id]', params: { id } });
+    router.push({ pathname: '/dream/book', params: { startId: id } });
   }
 
   function goEdit(id: string) {
@@ -101,10 +100,23 @@ export default function DreamListScreen() {
     >
       <View style={[s.safe, { paddingTop: insets.top }]}>
         <View style={s.header}>
-          <Text style={s.title}>Sueños</Text>
-          <View style={s.subtitleRow}>
-            <Ionicons name="moon" size={14} color={colors.textMuted} />
-            <Text style={s.subtitle}>Tu diario onírico</Text>
+          <View style={s.headerTop}>
+            <View>
+              <Text style={s.title}>Sueños</Text>
+              <View style={s.subtitleRow}>
+                <Ionicons name="moon" size={14} color={colors.textMuted} />
+                <Text style={s.subtitle}>Tu diario onírico</Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Vista libro"
+              onPress={() => router.push('/dream/book')}
+              style={({ pressed }) => [s.bookBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Ionicons name="book-outline" size={16} color={colors.accent} />
+              <Text style={s.bookBtnLabel}>Libro</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -237,6 +249,27 @@ const s = StyleSheet.create({
   header: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  bookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(124, 92, 196, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.28)',
+  },
+  bookBtnLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.accent,
   },
   title: {
     fontSize: typography.sizes.hero,
