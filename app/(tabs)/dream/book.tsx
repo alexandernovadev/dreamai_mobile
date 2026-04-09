@@ -10,10 +10,8 @@ import {
 } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { ScreenShell } from '@/components/layout/ScreenShell';
-import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -82,7 +80,7 @@ function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
 
 const ps = StyleSheet.create({
   page: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: 0,
   },
   center: {
     flex: 1,
@@ -126,7 +124,6 @@ export default function DreamBookScreen() {
     : startIdParam;
 
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
 
   const flatListRef = useRef<FlatList<DreamSession>>(null);
@@ -219,12 +216,62 @@ export default function DreamBookScreen() {
 
   return (
     <ScreenShell>
-        <ScreenHeader
-          title="Libro de sueños"
-          subtitle={total > 0 ? `Página ${currentIndex + 1} / ${total}` : undefined}
-          onBack={() => router.back()}
-          style={s.header}
-        />
+        <View style={s.header}>
+          <View style={s.headerMain}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons name="chevron-back" size={26} color={colors.text} />
+            </Pressable>
+
+            <Text style={s.headerTitle}>BookDream</Text>
+            <Text style={s.headerCount}>
+              {total > 0 ? `(${currentIndex + 1}/${total})` : '(0/0)'}
+            </Text>
+
+            <View style={s.headerNav}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sueño anterior"
+                disabled={isFirst}
+                onPress={goPrev}
+                style={({ pressed }) => [
+                  s.headerNavBtn,
+                  isFirst && s.headerNavBtnDisabled,
+                  pressed && !isFirst && { opacity: 0.85 },
+                ]}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={isFirst ? colors.textMuted : colors.text}
+                />
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sueño siguiente"
+                disabled={isLast}
+                onPress={goNext}
+                style={({ pressed }) => [
+                  s.headerNavBtn,
+                  isLast && s.headerNavBtnDisabled,
+                  pressed && !isLast && { opacity: 0.85 },
+                ]}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={isLast ? colors.textMuted : colors.text}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </View>
 
         {/* ── Body ── */}
         {loading ? (
@@ -285,82 +332,6 @@ export default function DreamBookScreen() {
               )}
             />
 
-            {/* ── Footer navigation ── */}
-            <View
-              style={[
-                s.footer,
-                { paddingBottom: insets.bottom + spacing.md },
-              ]}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Página anterior"
-                disabled={isFirst}
-                onPress={goPrev}
-                style={({ pressed }) => [
-                  s.navBtn,
-                  isFirst && s.navBtnDisabled,
-                  pressed && !isFirst && { opacity: 0.85 },
-                ]}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={18}
-                  color={isFirst ? colors.textMuted : colors.text}
-                />
-                <Text
-                  style={[
-                    s.navBtnLabel,
-                    isFirst && s.navBtnLabelDisabled,
-                  ]}
-                >
-                  Anterior
-                </Text>
-              </Pressable>
-
-              {total <= 15 ? (
-                <View style={s.dotRow}>
-                  {dreams.map((d, i) => (
-                    <View
-                      key={d.id}
-                      style={[s.dot, i === currentIndex && s.dotActive]}
-                    />
-                  ))}
-                </View>
-              ) : (
-                <View style={s.pageChip}>
-                  <Text style={s.pageChipText}>
-                    {currentIndex + 1} / {total}
-                  </Text>
-                </View>
-              )}
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Página siguiente"
-                disabled={isLast}
-                onPress={goNext}
-                style={({ pressed }) => [
-                  s.navBtn,
-                  isLast && s.navBtnDisabled,
-                  pressed && !isLast && { opacity: 0.85 },
-                ]}
-              >
-                <Text
-                  style={[
-                    s.navBtnLabel,
-                    isLast && s.navBtnLabelDisabled,
-                  ]}
-                >
-                  Siguiente
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={isLast ? colors.textMuted : colors.text}
-                />
-              </Pressable>
-            </View>
           </>
         )}
     </ScreenShell>
@@ -368,9 +339,50 @@ export default function DreamBookScreen() {
 }
 
 const s = StyleSheet.create({
-
   header: {
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  headerMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  backBtn: {
+    marginLeft: -spacing.xs,
+    padding: spacing.xs,
+  },
+  headerTitle: {
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  headerCount: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium,
+    color: colors.textMuted,
+    marginLeft: spacing.xs,
+    flexShrink: 1,
+  },
+  headerNav: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerNavBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.42)',
+    backgroundColor: 'rgba(124, 92, 196, 0.24)',
+  },
+  headerNavBtnDisabled: {
+    opacity: 0.45,
   },
 
   pager: { flex: 1 },
@@ -426,64 +438,5 @@ const s = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: spacing.sm,
-  },
-
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  navBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-  },
-  navBtnDisabled: {
-    opacity: 0.35,
-  },
-  navBtnLabel: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  navBtnLabelDisabled: {
-    color: colors.textMuted,
-  },
-  dotRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    flexWrap: 'wrap',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  dotActive: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.accent,
-  },
-  pageChip: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  pageChipText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.textMuted,
   },
 });

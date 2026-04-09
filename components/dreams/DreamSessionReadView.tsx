@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -10,6 +9,12 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollOffset,
+} from 'react-native-reanimated';
 import { Chip } from '@/components/ui/Chip';
 import {
   DREAM_KIND_OPTIONS,
@@ -111,9 +116,12 @@ export function DreamSessionReadView({
 }: DreamSessionReadViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const thumbW = (Math.min(width - spacing.xl * 2, 440) - spacing.sm) / 2;
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollOffset = useScrollOffset(scrollRef);
+  const heroHeight = Math.max(280, Math.min(width * 0.92, 420));
 
   const [tab, setTab] = useState<'dream' | 'elements'>('dream');
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
 
   const entitySections = useMemo((): EntitySectionDef[] => {
     const ent = session.analysis?.entities;
@@ -211,14 +219,53 @@ export function DreamSessionReadView({
 
   const perspectives = session.analysis?.perspectives?.filter(Boolean) ?? [];
   const lucidity = session.analysis?.lucidityLevel;
+  const heroImageUri = session.dreamImages[heroImageIndex] ?? null;
+  const hasMultipleImages = session.dreamImages.length > 1;
 
   const when = session.timestamp ?? session.createdAt;
   const dateLine = when ? formatDreamDateTime(when) : 'Sin fecha';
+
+  useEffect(() => {
+    setHeroImageIndex(0);
+  }, [session.id, session.dreamImages.length]);
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollOffset.value,
+          [-heroHeight, 0, heroHeight],
+          [-heroHeight / 2, 0, heroHeight * 0.7]
+        ),
+      },
+      {
+        scale: interpolate(
+          scrollOffset.value,
+          [-heroHeight, 0, heroHeight],
+          [1.8, 1, 1]
+        ),
+      },
+    ],
+  }));
 
   function goSignal(slug: SignalEntityListSlug, catalogId: string) {
     if (!catalogId) return;
     const returnTo = encodeURIComponent(`/dream/${session.id}`);
     router.push(`/signals/${slug}/${catalogId}?returnTo=${returnTo}`);
+  }
+
+  function goPrevHeroImage() {
+    if (!session.dreamImages.length) return;
+    setHeroImageIndex((current) =>
+      current === 0 ? session.dreamImages.length - 1 : current - 1
+    );
+  }
+
+  function goNextHeroImage() {
+    if (!session.dreamImages.length) return;
+    setHeroImageIndex((current) =>
+      current === session.dreamImages.length - 1 ? 0 : current + 1
+    );
   }
 
   return (
@@ -275,139 +322,198 @@ export function DreamSessionReadView({
       </View>
 
       {tab === 'dream' ? (
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.dreamScrollContent}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.hero}>
-            <Text style={styles.dateLine}>{dateLine}</Text>
-            <View
-              style={[
-                styles.statusPill,
-                {
-                  backgroundColor: STATUS_TONE[session.status].bg,
-                  borderColor: STATUS_TONE[session.status].border,
-                },
-              ]}
-            >
-              <Text
+          <Animated.View
+            style={[
+              styles.parallaxHeader,
+              { height: heroHeight },
+              headerAnimatedStyle,
+            ]}
+          >
+            {heroImageUri ? (
+              <>
+                <Image
+                  source={{ uri: heroImageUri }}
+                  style={styles.heroBackdrop}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <View style={styles.heroShade} />
+                <View style={styles.heroForeground}>
+                  <Image
+                    source={{ uri: heroImageUri }}
+                    style={styles.heroImage}
+                    contentFit="contain"
+                    transition={200}
+                  />
+                </View>
+                {hasMultipleImages ? (
+                  <View style={styles.heroCarouselControls}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Imagen anterior"
+                      onPress={goPrevHeroImage}
+                      style={({ pressed }) => [
+                        styles.heroNavBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <Ionicons name="chevron-back" size={18} color={colors.text} />
+                    </Pressable>
+
+                    <View style={styles.heroCarouselMeta}>
+                      <Text style={styles.heroCarouselCount}>
+                        {heroImageIndex + 1} / {session.dreamImages.length}
+                      </Text>
+                    </View>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Imagen siguiente"
+                      onPress={goNextHeroImage}
+                      style={({ pressed }) => [
+                        styles.heroNavBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color={colors.text}
+                      />
+                    </Pressable>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <View style={styles.heroEmpty}>
+                <Ionicons
+                  name="image-outline"
+                  size={48}
+                  color={colors.textMuted}
+                />
+                <Text style={styles.heroEmptyText}>Sin imagen del sueño</Text>
+              </View>
+            )}
+          </Animated.View>
+
+          <View style={styles.dreamCard}>
+            <View style={styles.hero}>
+              <Text style={styles.dateLine}>{dateLine}</Text>
+              <View
                 style={[
-                  styles.statusText,
-                  { color: STATUS_TONE[session.status].text },
+                  styles.statusPill,
+                  {
+                    backgroundColor: STATUS_TONE[session.status].bg,
+                    borderColor: STATUS_TONE[session.status].border,
+                  },
                 ]}
               >
-                {STATUS_LABEL[session.status]}
-              </Text>
-            </View>
-          </View>
-
-          {session.rawNarrative.trim().length > 0 ? (
-            <Text style={styles.narrative}>{session.rawNarrative.trim()}</Text>
-          ) : (
-            <Text style={styles.mutedBlock}>Sin narrativa registrada.</Text>
-          )}
-
-          {session.dreamKind.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tipo</Text>
-              <View style={styles.chipRow}>
-                {session.dreamKind.map((k, idx) => (
-                  <Chip
-                    key={k}
-                    label={dreamKindLabel(k)}
-                    variant={KIND_VARIANTS[idx % KIND_VARIANTS.length]}
-                    selected
-                  />
-                ))}
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: STATUS_TONE[session.status].text },
+                  ]}
+                >
+                  {STATUS_LABEL[session.status]}
+                </Text>
               </View>
             </View>
-          ) : null}
 
-          {session.dreamImages.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Imágenes del sueño</Text>
-              <View style={styles.imageGrid}>
-                {session.dreamImages.map((uri) => (
-                  <View
-                    key={uri}
-                    style={[styles.thumbWrap, { width: thumbW }]}
-                  >
-                    <Image
-                      source={{ uri }}
-                      style={styles.thumb}
-                      contentFit="cover"
-                      transition={200}
+            {session.rawNarrative.trim().length > 0 ? (
+              <Text style={styles.narrative}>{session.rawNarrative.trim()}</Text>
+            ) : (
+              <Text style={styles.mutedBlock}>Sin narrativa registrada.</Text>
+            )}
+
+            {session.dreamKind.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tipo</Text>
+                <View style={styles.chipRow}>
+                  {session.dreamKind.map((k, idx) => (
+                    <Chip
+                      key={k}
+                      label={dreamKindLabel(k)}
+                      variant={KIND_VARIANTS[idx % KIND_VARIANTS.length]}
+                      selected
                     />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {session.userThought?.trim() ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tu reflexión</Text>
+                <Text style={styles.bodyText}>{session.userThought.trim()}</Text>
+              </View>
+            ) : null}
+
+            {session.aiSummarize?.trim() ? (
+              <View style={[styles.section, styles.aiCard]}>
+                <View style={styles.aiCardHead}>
+                  <Ionicons name="sparkles" size={18} color={colors.accent} />
+                  <Text style={styles.aiCardTitle}>Lectura DreamAI</Text>
+                </View>
+                <Text style={styles.bodyText}>{session.aiSummarize.trim()}</Text>
+              </View>
+            ) : null}
+
+            {lucidity != null && lucidity >= 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Lucidez</Text>
+                <Text style={styles.lucidityLabel}>
+                  {lucidity} / 10
+                </Text>
+                <View style={styles.lucidityTrack}>
+                  <View
+                    style={[
+                      styles.lucidityFill,
+                      { width: `${Math.min(100, (lucidity / 10) * 100)}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+            ) : null}
+
+            {perspectives.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Perspectivas</Text>
+                {perspectives.map((p, i) => (
+                  <View key={`${i}-${p.slice(0, 24)}`} style={styles.bulletRow}>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={styles.bodyText}>
+                      {dreamPerspectiveLabel(p)}
+                    </Text>
                   </View>
                 ))}
               </View>
-            </View>
-          ) : null}
-
-          {session.userThought?.trim() ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tu reflexión</Text>
-              <Text style={styles.bodyText}>{session.userThought.trim()}</Text>
-            </View>
-          ) : null}
-
-          {session.aiSummarize?.trim() ? (
-            <View style={[styles.section, styles.aiCard]}>
-              <View style={styles.aiCardHead}>
-                <Ionicons name="sparkles" size={18} color={colors.accent} />
-                <Text style={styles.aiCardTitle}>Lectura DreamAI</Text>
-              </View>
-              <Text style={styles.bodyText}>{session.aiSummarize.trim()}</Text>
-            </View>
-          ) : null}
-
-          {lucidity != null && lucidity >= 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Lucidez</Text>
-              <Text style={styles.lucidityLabel}>
-                {lucidity} / 10
-              </Text>
-              <View style={styles.lucidityTrack}>
-                <View
-                  style={[
-                    styles.lucidityFill,
-                    { width: `${Math.min(100, (lucidity / 10) * 100)}%` },
-                  ]}
-                />
-              </View>
-            </View>
-          ) : null}
-
-          {perspectives.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Perspectivas</Text>
-              {perspectives.map((p, i) => (
-                <View key={`${i}-${p.slice(0, 24)}`} style={styles.bulletRow}>
-                  <Text style={styles.bullet}>•</Text>
-                  <Text style={styles.bodyText}>{dreamPerspectiveLabel(p)}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          <View style={styles.metaFoot}>
-            {session.createdAt ? (
-              <Text style={styles.metaText}>
-                Registrado {formatMetaDate(session.createdAt)}
-              </Text>
             ) : null}
-            {session.updatedAt &&
-            session.createdAt &&
-            session.updatedAt.getTime() !== session.createdAt.getTime() ? (
-              <Text style={styles.metaText}>
-                Actualizado {formatMetaDate(session.updatedAt)}
-              </Text>
-            ) : null}
+
+            <View style={styles.metaFoot}>
+              {session.createdAt ? (
+                <Text style={styles.metaText}>
+                  Registrado {formatMetaDate(session.createdAt)}
+                </Text>
+              ) : null}
+              {session.updatedAt &&
+              session.createdAt &&
+              session.updatedAt.getTime() !== session.createdAt.getTime() ? (
+                <Text style={styles.metaText}>
+                  Actualizado {formatMetaDate(session.updatedAt)}
+                </Text>
+              ) : null}
+            </View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -468,7 +574,7 @@ export function DreamSessionReadView({
               </View>
             ))
           )}
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </View>
   );
@@ -506,9 +612,89 @@ const styles = StyleSheet.create({
   tabLabelOn: { color: colors.text },
   tabLabelOff: { color: colors.textMuted },
   scroll: { flex: 1 },
+  dreamScrollContent: {
+    paddingBottom: spacing.xxxl,
+  },
   scrollContent: {
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
+  },
+  parallaxHeader: {
+    overflow: 'hidden',
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  heroBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.34,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(6, 8, 18, 0.42)',
+  },
+  heroForeground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  heroCarouselControls: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  heroNavBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.42)',
+    backgroundColor: 'rgba(124, 92, 196, 0.28)',
+  },
+  heroCarouselMeta: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(7, 8, 18, 0.55)',
+  },
+  heroCarouselCount: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  heroEmptyText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+  },
+  dreamCard: {
+    marginTop: -spacing.xl,
+    padding: spacing.lg,
+    gap: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.18)',
+    backgroundColor: 'rgba(8, 10, 18, 0.88)',
   },
   hero: { gap: spacing.sm },
   dateLine: {
@@ -551,21 +737,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  thumbWrap: {
-    aspectRatio: 1,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  thumb: {
-    ...StyleSheet.absoluteFillObject,
   },
   bodyText: {
     fontSize: typography.sizes.md,

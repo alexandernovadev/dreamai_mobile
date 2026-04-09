@@ -1,63 +1,72 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
-import { queryKeys } from '@/lib/queryKeys';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { SuccessBanner } from '@/components/ui/SuccessBanner';
-import { TextareaFullHeight } from '@/components/ui/TextareaFullHeight';
-import { useSuccessBanner } from '@/hooks/useSuccessBanner';
-import { DreamDetailForm } from '@/components/dreams/DreamDetailForm';
-import { ElementsStep } from '@/components/dreams/ElementsStep';
-import { ThoughtStep } from '@/components/dreams/ThoughtStep';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { DREAM_LIST_QUERY_PARAMS } from "@/lib/dreamListQuery";
+import { queryKeys } from "@/lib/queryKeys";
+import { colors, gradients, radius, spacing, typography } from "@/theme";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { SuccessBanner } from "@/components/ui/SuccessBanner";
+import { TextareaFullHeight } from "@/components/ui/TextareaFullHeight";
+import { useSuccessBanner } from "@/hooks/useSuccessBanner";
+import { DreamDetailForm } from "@/components/dreams/DreamDetailForm";
+import { ElementsStep } from "@/components/dreams/ElementsStep";
+import { ThoughtStep } from "@/components/dreams/ThoughtStep";
 import {
   ApiError,
   apiErrorMessage,
   dreamSessionsService,
   filterAllowedPerspectives,
   type DreamSession,
-} from '@/services';
+} from "@/services";
 
-const TABS = ['draft', 'elements', 'detail', 'thought'] as const;
+const TABS = ["draft", "elements", "detail", "thought"] as const;
 type TabId = (typeof TABS)[number];
 
 const TAB_LABEL: Record<TabId, string> = {
-  draft: '1. Borrador',
-  elements: '2. Elementos',
-  detail: '3. Detalle',
-  thought: '4. Reflexión',
+  draft: "1. Borrador",
+  elements: "2. Elementos",
+  detail: "3. Detalle",
+  thought: "4. Reflexión",
 };
 
 const TAB_ICON: Record<TabId, keyof typeof Ionicons.glyphMap> = {
-  draft: 'document-text-outline',
-  elements: 'pricetags-outline',
-  detail: 'grid-outline',
-  thought: 'bulb-outline',
+  draft: "document-text-outline",
+  elements: "pricetags-outline",
+  detail: "grid-outline",
+  thought: "bulb-outline",
 };
 
 export type DreamEditorScreenProps = {
-  mode: 'new' | 'edit';
+  mode: "new" | "edit";
   /** Obligatorio si `mode === 'edit'` */
   initialSessionId?: string;
 };
 
-export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenProps) {
+export function DreamEditorScreen({
+  mode,
+  initialSessionId,
+}: DreamEditorScreenProps) {
   const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const editSessionId = initialSessionId?.trim() ?? '';
+  const editSessionId = initialSessionId?.trim() ?? "";
   const detailQuery = useQuery({
     queryKey: queryKeys.dreamSessions.detail(editSessionId),
     queryFn: () => dreamSessionsService.getOne(editSessionId),
-    enabled: mode === 'edit' && editSessionId.length > 0,
+    enabled: mode === "edit" && editSessionId.length > 0,
     refetchOnWindowFocus: false,
   });
 
@@ -69,7 +78,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   }, [editSessionId]);
 
   useEffect(() => {
-    if (mode !== 'edit' || !detailQuery.data) return;
+    if (mode !== "edit" || !detailQuery.data) return;
     if (hydratedFromQueryRef.current) return;
     hydratedFromQueryRef.current = true;
     const s = detailQuery.data;
@@ -82,26 +91,26 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
       filterAllowedPerspectives(s.analysis?.perspectives ?? []),
     );
     setDetailLucidityLevel(s.analysis?.lucidityLevel);
-    setUserThought(s.userThought ?? '');
+    setUserThought(s.userThought ?? "");
     setAiSummarize(s.aiSummarize);
     setDraftSaved(true);
   }, [mode, detailQuery.data]);
 
   const bootLoading =
-    mode === 'edit' && editSessionId.length > 0 && detailQuery.isPending;
+    mode === "edit" && editSessionId.length > 0 && detailQuery.isPending;
   const bootError =
-    mode === 'edit' && editSessionId.length > 0 && detailQuery.isError
+    mode === "edit" && editSessionId.length > 0 && detailQuery.isError
       ? apiErrorMessage(detailQuery.error)
       : null;
 
-  const [activeTab, setActiveTab] = useState<TabId>('draft');
+  const [activeTab, setActiveTab] = useState<TabId>("draft");
   const [draftSaved, setDraftSaved] = useState(false);
-  const [draftText, setDraftText] = useState('');
+  const [draftText, setDraftText] = useState("");
   const [draftError, setDraftError] = useState<string | undefined>();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{
     message: string;
-    kind: 'network' | 'server';
+    kind: "network" | "server";
   } | null>(null);
 
   const [detailTimestamp, setDetailTimestamp] = useState<Date | undefined>();
@@ -111,9 +120,10 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   const [detailLucidityLevel, setDetailLucidityLevel] = useState<
     number | undefined
   >();
-  const [userThought, setUserThought] = useState<string>('');
+  const [userThought, setUserThought] = useState<string>("");
   const [aiSummarize, setAiSummarize] = useState<string | undefined>();
-  const { message: draftSuccessMsg, show: showDraftSuccess } = useSuccessBanner();
+  const { message: draftSuccessMsg, show: showDraftSuccess } =
+    useSuccessBanner();
 
   type SaveDraftVars = { trimmed: string; existingId: string | null };
 
@@ -124,12 +134,12 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         return dreamSessionsService.update(existingId, {
           rawNarrative: trimmed,
           timestamp: now,
-          status: 'DRAFT',
+          status: "DRAFT",
         });
       }
       return dreamSessionsService.create({
         timestamp: now,
-        status: 'DRAFT',
+        status: "DRAFT",
         rawNarrative: trimmed,
       });
     },
@@ -142,19 +152,19 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         filterAllowedPerspectives(saved.analysis?.perspectives ?? []),
       );
       setDetailLucidityLevel(saved.analysis?.lucidityLevel);
-      setUserThought(saved.userThought ?? '');
+      setUserThought(saved.userThought ?? "");
       setAiSummarize(saved.aiSummarize);
       queryClient.setQueryData(queryKeys.dreamSessions.detail(saved.id), saved);
       void queryClient.invalidateQueries({
         queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
       });
       setDraftSaved(true);
-      showDraftSuccess('Borrador guardado');
+      showDraftSuccess("Borrador guardado");
     },
     onError: (e) => {
       const msg = apiErrorMessage(e);
       const kind =
-        e instanceof ApiError && e.status === 0 ? 'network' : 'server';
+        e instanceof ApiError && e.status === 0 ? "network" : "server";
       setSaveError({ message: msg, kind });
     },
   });
@@ -165,21 +175,21 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
   }
 
   function selectTab(tab: TabId) {
-    if (tab !== 'draft' && !draftSaved) return;
+    if (tab !== "draft" && !draftSaved) return;
     setActiveTab(tab);
   }
 
   function handleSaveDraft() {
     const trimmed = draftText.trim();
     if (!trimmed) {
-      setDraftError('Escribe la narrativa del sueño antes de guardar.');
+      setDraftError("Escribe la narrativa del sueño antes de guardar.");
       return;
     }
     setDraftError(undefined);
     saveDraftMutation.mutate({ trimmed, existingId: sessionId });
   }
 
-  const title = mode === 'edit' ? 'Editar sueño' : 'Nuevo sueño';
+  const title = mode === "edit" ? "Editar sueño" : "Nuevo sueño";
 
   if (bootLoading) {
     return (
@@ -205,8 +215,17 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
         end={bg.end}
         style={styles.root}
       >
-        <View style={[styles.boot, { paddingTop: insets.top, paddingHorizontal: spacing.xl }]}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.danger} />
+        <View
+          style={[
+            styles.boot,
+            { paddingTop: insets.top, paddingHorizontal: spacing.xl },
+          ]}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={colors.danger}
+          />
           <Text style={styles.bootErrText}>{bootError}</Text>
           <View style={styles.bootErrActions}>
             <Button
@@ -245,20 +264,22 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               accessibilityLabel="Volver"
               hitSlop={12}
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
+              style={({ pressed }) => [
+                styles.backBtn,
+                pressed && { opacity: 0.5 },
+              ]}
             >
-              <Ionicons name="chevron-back" size={28} color={colors.text} />
+              <Ionicons name="chevron-back" size={20} color={colors.text} />
             </Pressable>
             <View style={styles.headerText}>
               <Text style={styles.title}>{title}</Text>
-              <Text style={styles.subtitle}>Paso a paso</Text>
             </View>
           </View>
 
           <View style={styles.tabBar}>
             {TABS.map((tab) => {
               const active = activeTab === tab;
-              const locked = tab !== 'draft' && !draftSaved;
+              const locked = tab !== "draft" && !draftSaved;
               return (
                 <Pressable
                   key={tab}
@@ -294,7 +315,11 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                     {TAB_LABEL[tab]}
                   </Text>
                   {locked && (
-                    <Ionicons name="lock-closed" size={10} color={colors.textMuted} />
+                    <Ionicons
+                      name="lock-closed"
+                      size={10}
+                      color={colors.textMuted}
+                    />
                   )}
                 </Pressable>
               );
@@ -302,7 +327,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
           </View>
 
           <View style={styles.content}>
-            {activeTab === 'draft' && (
+            {activeTab === "draft" && (
               <View style={styles.draftColumn}>
                 <TextareaFullHeight
                   label="Narrativa"
@@ -320,7 +345,9 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                     onPress={() => void handleSaveDraft()}
                     disabled={saveDraftMutation.isPending}
                   >
-                    {saveDraftMutation.isPending ? 'Guardando…' : 'Guardar borrador'}
+                    {saveDraftMutation.isPending
+                      ? "Guardando…"
+                      : "Guardar borrador"}
                   </Button>
                   {!draftSaved && (
                     <Text style={styles.hint}>
@@ -335,7 +362,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               <View
                 style={[
                   styles.elementsPanel,
-                  activeTab !== 'elements' && styles.elementsPanelHidden,
+                  activeTab !== "elements" && styles.elementsPanelHidden,
                 ]}
               >
                 <ElementsStep
@@ -345,7 +372,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               </View>
             ) : null}
 
-            {activeTab === 'detail' && draftSaved && sessionId ? (
+            {activeTab === "detail" && draftSaved && sessionId ? (
               <View style={styles.detailPanel}>
                 <DreamDetailForm
                   sessionId={sessionId}
@@ -366,7 +393,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                   onError={(message, kind) => setSaveError({ message, kind })}
                 />
               </View>
-            ) : activeTab === 'detail' ? (
+            ) : activeTab === "detail" ? (
               <View style={styles.placeholderWrap}>
                 <Text style={styles.placeholder}>
                   Guarda el borrador para editar fecha, tipos e imágenes.
@@ -378,7 +405,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
               <View
                 style={[
                   styles.thoughtPanel,
-                  activeTab !== 'thought' && styles.elementsPanelHidden,
+                  activeTab !== "thought" && styles.elementsPanelHidden,
                 ]}
               >
                 <ThoughtStep
@@ -386,7 +413,7 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
                   initialUserThought={userThought}
                   initialAiSummarize={aiSummarize}
                   onSaved={(s) => {
-                    setUserThought(s.userThought ?? '');
+                    setUserThought(s.userThought ?? "");
                     setAiSummarize(s.aiSummarize);
                   }}
                   onError={(message, kind) => setSaveError({ message, kind })}
@@ -408,18 +435,18 @@ export function DreamEditorScreen({ mode, initialSessionId }: DreamEditorScreenP
             <View
               style={[
                 styles.errorIconWrap,
-                saveError.kind === 'network' && styles.errorIconWrapNetwork,
+                saveError.kind === "network" && styles.errorIconWrapNetwork,
               ]}
             >
               <Ionicons
                 name={
-                  saveError.kind === 'network'
-                    ? 'cloud-offline-outline'
-                    : 'alert-circle-outline'
+                  saveError.kind === "network"
+                    ? "cloud-offline-outline"
+                    : "alert-circle-outline"
                 }
                 size={44}
                 color={
-                  saveError.kind === 'network' ? colors.info : colors.danger
+                  saveError.kind === "network" ? colors.info : colors.danger
                 }
               />
             </View>
@@ -436,8 +463,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: spacing.xl },
   boot: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: spacing.md,
   },
   bootText: {
@@ -447,37 +474,31 @@ const styles = StyleSheet.create({
   bootErrText: {
     fontSize: typography.sizes.md,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
   },
   bootErrActions: {
-    width: '100%',
+    width: "100%",
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.sm,
     marginBottom: spacing.md,
     paddingTop: spacing.md,
   },
-  backBtn: { marginLeft: -spacing.xs, padding: spacing.xs },
+  backBtn: { marginLeft: -spacing.xs, paddingTop: spacing.xs },
   headerText: { flex: 1 },
   title: {
-    fontSize: typography.sizes.xxl,
+    fontSize: typography.sizes.xl,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
-  subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.surfaceMuted,
     borderRadius: radius.md,
     padding: 3,
@@ -486,9 +507,9 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 3,
     paddingVertical: spacing.sm,
     paddingHorizontal: 2,
@@ -521,7 +542,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   elementsPanelHidden: {
-    display: 'none',
+    display: "none",
   },
   draftColumn: {
     flex: 1,
@@ -535,14 +556,14 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
-    fontStyle: 'italic',
-    textAlign: 'center',
+    fontStyle: "italic",
+    textAlign: "center",
   },
 
   placeholderWrap: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: spacing.xxxl,
   },
   placeholder: {
@@ -559,27 +580,27 @@ const styles = StyleSheet.create({
   },
 
   errorModalBody: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: spacing.md,
   },
   errorIconWrap: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(232, 93, 106, 0.12)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(232, 93, 106, 0.12)",
     borderWidth: 1,
-    borderColor: 'rgba(232, 93, 106, 0.25)',
+    borderColor: "rgba(232, 93, 106, 0.25)",
   },
   errorIconWrapNetwork: {
-    backgroundColor: 'rgba(109, 179, 255, 0.12)',
-    borderColor: 'rgba(109, 179, 255, 0.28)',
+    backgroundColor: "rgba(109, 179, 255, 0.12)",
+    borderColor: "rgba(109, 179, 255, 0.28)",
   },
   errorModalMessage: {
     fontSize: typography.sizes.md,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
 });

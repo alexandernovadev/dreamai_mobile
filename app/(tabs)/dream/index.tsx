@@ -7,12 +7,14 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -61,6 +63,7 @@ const STATUS_TONE: Record<
 export default function DreamListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const listQuery = useQuery({
     queryKey: queryKeys.dreamSessions.list(DREAM_LIST_QUERY_PARAMS),
@@ -72,6 +75,12 @@ export default function DreamListScreen() {
   const loading = listQuery.isPending && dreams.length === 0;
   const refreshing =
     listQuery.isFetching && !listQuery.isPending && dreams.length > 0;
+  const availableWidth = Math.max(width - spacing.xl * 2, 0);
+  const gridColumns = Math.max(1, Math.min(5, Math.floor(availableWidth / 220)));
+  const cardWidth =
+    gridColumns > 0
+      ? (availableWidth - spacing.md * Math.max(gridColumns - 1, 0)) / gridColumns
+      : availableWidth;
 
   useFocusEffect(
     useCallback(() => {
@@ -130,13 +139,16 @@ export default function DreamListScreen() {
         ) : (
           <FlatList
             data={dreams}
+            key={gridColumns}
             keyExtractor={(item) => item.id}
+            numColumns={gridColumns}
             contentContainerStyle={[
               s.listContent,
               {
                 paddingBottom: insets.bottom + spacing.xxxl + 56,
               },
             ]}
+            columnWrapperStyle={gridColumns > 1 ? s.gridRow : undefined}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -158,46 +170,88 @@ export default function DreamListScreen() {
             }
             renderItem={({ item }) => {
               const tone = STATUS_TONE[item.status];
+              const coverUri = item.dreamImages[0] ?? null;
               return (
-                <View style={s.card}>
-                  <View style={s.cardTop}>
+                <View style={[s.cardCol, { width: cardWidth }]}>
+                  <View style={s.card}>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Ver sueño del ${dreamDateLabel(item)}`}
                       onPress={() => goView(item.id)}
-                      style={({ pressed }) => [s.cardMeta, pressed && s.cardPressedInner]}
+                      style={({ pressed }) => [
+                        s.cardMediaPress,
+                        pressed && s.cardPressedInner,
+                      ]}
                     >
-                      <Text style={s.cardDate}>{dreamDateLabel(item)}</Text>
-                      <View
-                        style={[
-                          s.statusPill,
-                          { backgroundColor: tone.bg, borderColor: tone.border },
+                      {coverUri ? (
+                        <Image
+                          source={{ uri: coverUri }}
+                          style={s.cardImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ) : (
+                        <View style={s.cardImageFallback}>
+                          <Ionicons
+                            name="image-outline"
+                            size={28}
+                            color={colors.textMuted}
+                          />
+                        </View>
+                      )}
+                    </Pressable>
+
+                    <View style={s.cardBody}>
+                      <View style={s.cardTop}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ver sueño del ${dreamDateLabel(item)}`}
+                          onPress={() => goView(item.id)}
+                          style={({ pressed }) => [
+                            s.cardMeta,
+                            pressed && s.cardPressedInner,
+                          ]}
+                        >
+                          <Text style={s.cardDate}>{dreamDateLabel(item)}</Text>
+                          <View
+                            style={[
+                              s.statusPill,
+                              { backgroundColor: tone.bg, borderColor: tone.border },
+                            ]}
+                          >
+                            <Text style={[s.statusPillText, { color: tone.text }]}>
+                              {STATUS_LABEL[item.status]}
+                            </Text>
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Editar sueño"
+                          onPress={() => goEdit(item.id)}
+                          style={({ pressed }) => [
+                            s.editBtn,
+                            pressed && { opacity: 0.85 },
+                          ]}
+                        >
+                          <Ionicons name="create-outline" size={20} color={colors.accent} />
+                          <Text style={s.editBtnLabel}>Editar</Text>
+                        </Pressable>
+                      </View>
+
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => goView(item.id)}
+                        style={({ pressed }) => [
+                          s.snippetPress,
+                          pressed && s.cardPressedInner,
                         ]}
                       >
-                        <Text style={[s.statusPillText, { color: tone.text }]}>
-                          {STATUS_LABEL[item.status]}
+                        <Text style={s.cardSnippet} numberOfLines={4}>
+                          {dreamSnippet(item.rawNarrative)}
                         </Text>
-                      </View>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Editar sueño"
-                      onPress={() => goEdit(item.id)}
-                      style={({ pressed }) => [s.editBtn, pressed && { opacity: 0.85 }]}
-                    >
-                      <Ionicons name="create-outline" size={20} color={colors.accent} />
-                      <Text style={s.editBtnLabel}>Editar</Text>
-                    </Pressable>
+                      </Pressable>
+                    </View>
                   </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => goView(item.id)}
-                    style={({ pressed }) => [s.snippetPress, pressed && s.cardPressedInner]}
-                  >
-                    <Text style={s.cardSnippet} numberOfLines={3}>
-                      {dreamSnippet(item.rawNarrative)}
-                    </Text>
-                  </Pressable>
                 </View>
               );
             }}
@@ -318,12 +372,37 @@ const s = StyleSheet.create({
     gap: spacing.md,
     paddingTop: spacing.xs,
   },
+  gridRow: {
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cardCol: {
+    marginBottom: spacing.md,
+  },
 
   card: {
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.buttonBorder,
     backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  cardMediaPress: {
+    width: '100%',
+    aspectRatio: 1.2,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardImageFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(124, 92, 196, 0.08)',
+  },
+  cardBody: {
     padding: spacing.lg,
     gap: spacing.sm,
   },

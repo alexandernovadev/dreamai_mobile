@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -8,11 +9,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Ionicons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
-import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Radio } from '@/components/ui/Radio';
 import { Select, WebDateInput, type SelectOption } from '@/components/ui';
@@ -48,6 +49,7 @@ type SummarizeMode = 'limit' | 'dates';
 
 export default function SummarizeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [mode, setMode] = useState<SummarizeMode>('limit');
   const [limitChoice, setLimitChoice] = useState<string>('10');
@@ -261,56 +263,60 @@ export default function SummarizeScreen() {
 
   return (
     <ScreenShell>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
+      <View
+        style={[
+          styles.screen,
           {
-            paddingTop: insets.top + spacing.lg,
-            paddingBottom: insets.bottom + spacing.xxl,
+            paddingTop: insets.top + spacing.sm,
+            paddingBottom: insets.bottom + spacing.lg,
           },
         ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Ionicons name="chevron-back" size={26} color={colors.text} />
+          </Pressable>
           <Text style={styles.title}>Summarize</Text>
-       
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Abrir filtros del análisis"
-          onPress={() => setFilterModalOpen(true)}
-          disabled={loading}
-          style={({ pressed }) => [
-            styles.filterCard,
-            pressed && styles.filterCardPressed,
-            loading && styles.filterCardDisabled,
-          ]}
-        >
-          <View style={styles.filterCardLeft}>
-            <View style={styles.filterIconWrap}>
-              <Ionicons name="options-outline" size={22} color={colors.accent} />
-            </View>
-            <View style={styles.filterCardText}>
-              <Text style={styles.filterCardLabel}>Filtros del análisis</Text>
-              <Text style={styles.filterCardValue} numberOfLines={2}>
-                {filterSummary}
-              </Text>
-            </View>
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Abrir filtros del análisis"
+              onPress={() => setFilterModalOpen(true)}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                loading && styles.headerBtnDisabled,
+                pressed && !loading && { opacity: 0.85 },
+              ]}
+            >
+              <Ionicons name="options-outline" size={18} color={colors.accent} />
+              <Text style={styles.headerBtnLabel}>Filter</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Generar resumen con DreamAI"
+              onPress={() => void onSummarize()}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.aiBtn,
+                loading && styles.headerBtnDisabled,
+                pressed && !loading && { opacity: 0.85 },
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <Ionicons name="sparkles" size={18} color={colors.text} />
+              )}
+            </Pressable>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
-        </Pressable>
-
-        <Button
-          onPress={() => void onSummarize()}
-          disabled={loading}
-          loading={loading}
-          loadingLabel="Analizando sueños…"
-        >
-          Summarize
-        </Button>
+        </View>
 
         {error ? (
           <View style={styles.errorBox}>
@@ -334,15 +340,31 @@ export default function SummarizeScreen() {
           </View>
         ) : null}
 
-        {summary ? (
-          <View style={styles.resultCard}>
-            <Text style={styles.resultLabel}>Resumen</Text>
-            <Markdown style={markdownStyles} mergeStyle>
-              {summary}
-            </Markdown>
-          </View>
-        ) : null}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.resultScroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {summary ? (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultLabel}>Resumen</Text>
+              <Markdown style={markdownStyles} mergeStyle>
+                {summary}
+              </Markdown>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <Ionicons name="sparkles-outline" size={36} color={colors.accent} />
+              </View>
+              <Text style={styles.emptyStateTitle}>Pantalla lista para resumir</Text>
+              <Text style={styles.emptyStateText}>
+                Usa `Filter` para elegir el rango y luego toca el boton de AI para generar el resumen.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
 
       <Modal
         visible={filterModalOpen}
@@ -359,66 +381,59 @@ export default function SummarizeScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  screen: {
+    flex: 1,
     paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
-    display:'flex',
-    flexDirection:'row'
+    paddingBottom: spacing.md,
+  },
+  backBtn: {
+    marginLeft: -spacing.xs,
+    padding: spacing.xs,
   },
   title: {
-    fontSize: typography.sizes.xxl,
+    flex: 1,
+    fontSize: typography.sizes.xl,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
-  filterCard: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
+    gap: spacing.sm,
+  },
+  headerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(124, 92, 196, 0.28)',
-    backgroundColor: 'rgba(0, 0, 0, 0.16)',
+    backgroundColor: 'rgba(124, 92, 196, 0.12)',
   },
-  filterCardPressed: {
-    opacity: 0.92,
-  },
-  filterCardDisabled: {
-    opacity: 0.55,
-  },
-  filterCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-    minWidth: 0,
-  },
-  filterIconWrap: {
+  aiBtn: {
     width: 40,
     height: 40,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(124, 92, 196, 0.15)',
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.42)',
+    backgroundColor: 'rgba(124, 92, 196, 0.28)',
   },
-  filterCardText: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
+  headerBtnDisabled: {
+    opacity: 0.55,
   },
-  filterCardLabel: {
+  headerBtnLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-  },
-  filterCardValue: {
-    fontSize: typography.sizes.md,
-    color: colors.text,
-    lineHeight: 22,
+    color: colors.accent,
   },
   modalBody: {
     gap: spacing.lg,
@@ -477,6 +492,7 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   metaBox: {
+    marginBottom: spacing.md,
     padding: spacing.md,
     borderRadius: radius.md,
     backgroundColor: 'rgba(124, 92, 196, 0.1)',
@@ -495,7 +511,12 @@ const styles = StyleSheet.create({
   metaMuted: {
     color: colors.textMuted,
   },
+  resultScroll: {
+    flexGrow: 1,
+  },
   resultCard: {
+    flex: 1,
+    minHeight: '100%',
     padding: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceMuted,
@@ -509,5 +530,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  emptyState: {
+    flex: 1,
+    minHeight: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyStateIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(124, 92, 196, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 92, 196, 0.24)',
+  },
+  emptyStateTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: typography.sizes.md,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
