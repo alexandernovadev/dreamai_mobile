@@ -11,6 +11,7 @@ import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage, dreamSessionsService } from '@/services';
@@ -64,21 +65,11 @@ export default function DreamDetailScreen() {
 
   return (
     <ScreenShell style={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom }}>
-        <View style={s.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.5 }]}
-          >
-            <Ionicons name="chevron-back" size={28} color={colors.text} />
-          </Pressable>
-          <View style={s.headerText}>
-            <Text style={s.title}>Sueño</Text>
-            <Text style={s.subtitle}>Lectura</Text>
-          </View>
-        </View>
+        <ScreenHeader
+          title="Sueño"
+          subtitle="Lectura"
+          onBack={() => router.back()}
+        />
 
         {loading ? (
           <View style={s.center}>
@@ -104,24 +95,6 @@ export default function DreamDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  backBtn: { marginLeft: -spacing.xs, padding: spacing.xs },
-  headerText: { flex: 1 },
-  title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
   center: {
     flex: 1,
     justifyContent: 'center',

@@ -13,6 +13,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -218,26 +219,12 @@ export default function DreamBookScreen() {
 
   return (
     <ScreenShell>
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.5 }]}
-          >
-            <Ionicons name="chevron-back" size={28} color={colors.text} />
-          </Pressable>
-          <View style={s.headerText}>
-            <Text style={s.title}>Libro de sueños</Text>
-            {total > 0 ? (
-              <Text style={s.subtitle}>
-                Página {currentIndex + 1} / {total}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+        <ScreenHeader
+          title="Libro de sueños"
+          subtitle={total > 0 ? `Página ${currentIndex + 1} / ${total}` : undefined}
+          onBack={() => router.back()}
+          style={s.header}
+        />
 
         {/* ── Body ── */}
         {loading ? (
@@ -383,23 +370,7 @@ export default function DreamBookScreen() {
 const s = StyleSheet.create({
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-  },
-  backBtn: { marginLeft: -spacing.xs, padding: spacing.xs },
-  headerText: { flex: 1 },
-  title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
   },
 
   pager: { flex: 1 },

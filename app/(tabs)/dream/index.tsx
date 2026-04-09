@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -92,15 +93,11 @@ export default function DreamListScreen() {
 
   return (
     <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
-        <View style={s.header}>
-          <View style={s.headerTop}>
-            <View>
-              <Text style={s.title}>Sueños</Text>
-              <View style={s.subtitleRow}>
-                <Ionicons name="moon" size={14} color={colors.textMuted} />
-                <Text style={s.subtitle}>Tu diario onírico</Text>
-              </View>
-            </View>
+        <ScreenHeader
+          title="Sueños"
+          subtitle="Tu diario onírico"
+          subtitleIcon="moon"
+          right={
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Vista libro"
@@ -110,8 +107,8 @@ export default function DreamListScreen() {
               <Ionicons name="book-outline" size={16} color={colors.accent} />
               <Text style={s.bookBtnLabel}>Libro</Text>
             </Pressable>
-          </View>
-        </View>
+          }
+        />
 
         {loading ? (
           <View style={s.loadingBox}>
