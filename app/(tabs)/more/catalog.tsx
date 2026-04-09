@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Pressable,
   ScrollView,
@@ -7,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import {
   Badge,
   badgeLabelStyle,
@@ -24,7 +23,7 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 type CatalogTab =
   | 'buttons'
@@ -47,7 +46,6 @@ const THEME_OPTIONS: SelectOption[] = [
 ];
 
 export default function CatalogScreen() {
-  const bg = gradients.background;
   const [tab, setTab] = useState<CatalogTab>('buttons');
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<string | null>(null);
@@ -65,13 +63,7 @@ export default function CatalogScreen() {
   const [chipSelected, setChipSelected] = useState<string | null>('purple');
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
-      <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
+    <ScreenShell>
         <KeyboardAvoidingScroll
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -532,18 +524,11 @@ export default function CatalogScreen() {
             </View>
           )}
         </KeyboardAvoidingScroll>
-      </SafeAreaView>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  safe: {
-    flex: 1,
-  },
   scroll: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.huge,

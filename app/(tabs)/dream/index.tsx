@@ -10,10 +10,10 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -21,7 +21,7 @@ import {
   dreamSessionsService,
   type DreamSessionStatus,
 } from '@/services';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import { dreamDateLabel, dreamSnippet } from '@/utils/dream';
 
 const STATUS_LABEL: Record<DreamSessionStatus, string> = {
@@ -58,7 +58,6 @@ const STATUS_TONE: Record<
 };
 
 export default function DreamListScreen() {
-  const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -92,13 +91,7 @@ export default function DreamListScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
-      <View style={[s.safe, { paddingTop: insets.top }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
         <View style={s.header}>
           <View style={s.headerTop}>
             <View>
@@ -237,15 +230,11 @@ export default function DreamListScreen() {
         >
           <Ionicons name="add" size={28} color={colors.textInverse} />
         </Pressable>
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
-
   header: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,

@@ -1,5 +1,4 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import {
@@ -12,8 +11,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { EntityCatalogGridItem } from '@/components/signals/EntityCatalogGridItem';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage } from '@/services/api';
@@ -26,7 +25,7 @@ import {
   type SignalEntityListSlug,
 } from '@/services/signalEntities';
 import type { SignalHubCardItem } from '@/services/signalsHub';
-import { colors, gradients, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
@@ -39,8 +38,6 @@ const GRID_GAP = spacing.sm;
 export default function SignalsEntityListScreen() {
   const { entity } = useLocalSearchParams<{ entity: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const bg = gradients.background;
 
   const { width: windowWidth } = useWindowDimensions();
   const slug = (entity ?? '').toLowerCase();
@@ -101,30 +98,17 @@ export default function SignalsEntityListScreen() {
 
   if (!slugOk) {
     return (
-      <LinearGradient
-        colors={[...bg.colors]}
-        start={bg.start}
-        end={bg.end}
-        style={styles.root}
-      >
-        <View style={[styles.safe, { paddingTop: insets.top }]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={styles.errText}>Invalid catalog</Text>
-        </View>
-      </LinearGradient>
+      <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={styles.errText}>Invalid catalog</Text>
+      </ScreenShell>
     );
   }
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"
@@ -190,14 +174,11 @@ export default function SignalsEntityListScreen() {
             }
           />
         )}
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

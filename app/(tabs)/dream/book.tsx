@@ -9,10 +9,10 @@ import {
   View,
 } from 'react-native';
 import type { ViewToken } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Ionicons } from '@expo/vector-icons';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -22,7 +22,7 @@ import {
   dreamSessionsService,
   type DreamSession,
 } from '@/services';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 // ─── Per-page hydrated loader ─────────────────────────────────────────────────
 
@@ -127,7 +127,6 @@ export default function DreamBookScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const bg = gradients.background;
 
   const flatListRef = useRef<FlatList<DreamSession>>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -218,13 +217,7 @@ export default function DreamBookScreen() {
   const isLast = currentIndex >= total - 1;
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
-      <View style={[s.safe, { paddingTop: insets.top }]}>
+    <ScreenShell>
         {/* ── Header ── */}
         <View style={s.header}>
           <Pressable
@@ -383,14 +376,11 @@ export default function DreamBookScreen() {
             </View>
           </>
         )}
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1 },
 
   header: {
     flexDirection: 'row',

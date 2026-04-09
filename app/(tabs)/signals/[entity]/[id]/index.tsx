@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import {
@@ -11,8 +10,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Image } from 'expo-image';
 import { apiErrorMessage } from '@/services/api';
 import {
@@ -21,7 +20,7 @@ import {
 } from '@/lib/signalsCatalogEntity';
 import { queryKeys } from '@/lib/queryKeys';
 import { SIGNAL_ENTITY_SECTIONS, type SignalEntityListSlug } from '@/services/signalEntities';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import { safeDreamReturnToHref } from '@/utils/safeDreamReturnToHref';
 
 /** Lado máximo del cuadrado (px): evita imagen “alargada” en pantallas anchas. */
@@ -60,9 +59,7 @@ export default function SignalsCatalogDetailScreen() {
     returnTo?: string;
   }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const bg = gradients.background;
 
   /** Cuadrado: ~70 % del ancho útil, con tope en px. */
   const imageSidePx = useMemo(() => {
@@ -126,13 +123,7 @@ export default function SignalsCatalogDetailScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"
@@ -236,14 +227,11 @@ export default function SignalsCatalogDetailScreen() {
             </View>
           </ScrollView>
         ) : null}
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

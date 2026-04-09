@@ -7,14 +7,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage, dreamSessionsService } from '@/services';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 /**
  * Detalle del sueño en solo lectura: narrativa, imágenes, reflexión, análisis y
@@ -24,7 +24,6 @@ export default function DreamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const raw = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
-  const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const skipNextFocusRefetch = useRef(true);
 
@@ -64,13 +63,7 @@ export default function DreamDetailScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
-      <View style={[s.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom }}>
         <View style={s.header}>
           <Pressable
             accessibilityRole="button"
@@ -106,14 +99,11 @@ export default function DreamDetailScreen() {
         ) : session && hydratedMaps ? (
           <DreamSessionReadView session={session} hydrated={hydratedMaps} />
         ) : null}
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',

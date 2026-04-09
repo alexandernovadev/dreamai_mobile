@@ -1,10 +1,10 @@
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 
 type RowItem = {
   href:
@@ -82,7 +82,6 @@ function RowCard({ item, onPress }: { item: RowItem; onPress: () => void }) {
 export default function MoreScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const bg = gradients.background;
   const version =
     Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '—';
   const author =
@@ -90,13 +89,7 @@ export default function MoreScreen() {
     'NovaLabs';
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
-      <View style={[s.safe, { paddingTop: insets.top }]}>
+    <ScreenShell>
         <ScrollView
           contentContainerStyle={s.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -154,14 +147,11 @@ export default function MoreScreen() {
           <Text style={s.versionText}>Dreamia v{version}</Text>
           <Text style={s.authorText}>Por {author}</Text>
         </View>
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,

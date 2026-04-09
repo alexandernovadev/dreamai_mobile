@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { SignalsEntityCard } from '@/components/signals/SignalsEntityCard';
 import { SignalsEntityCardShell } from '@/components/signals/SignalsEntityCardShell';
 import { SignalsSection } from '@/components/signals/SignalsSection';
@@ -16,7 +15,7 @@ import {
   SIGNAL_ENTITY_SECTIONS,
   type SignalEntityListSlug,
 } from '@/services/signalEntities';
-import { colors, gradients, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 const CARDS_PER_SECTION = 5;
 
@@ -29,8 +28,6 @@ type HubState = Record<
  * /signals — hub. See all → /signals/:entity (e.g. /signals/characters).
  */
 export default function SignalsHubScreen() {
-  const bg = gradients.background;
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const hubQuery = useQuery({
@@ -42,13 +39,7 @@ export default function SignalsHubScreen() {
   const loading = hubQuery.isPending;
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
         <View style={styles.header}>
           <Text style={styles.title}>Signals</Text>
           <View style={styles.subtitleRow}>
@@ -111,14 +102,11 @@ export default function SignalsHubScreen() {
             );
           })}
         </ScrollView>
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
   header: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,

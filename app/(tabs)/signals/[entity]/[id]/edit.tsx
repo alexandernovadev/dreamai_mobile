@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import {
@@ -9,8 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { CatalogImageField } from '@/components/signals/CatalogImageField';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -40,7 +39,7 @@ import {
   SIGNAL_ENTITY_SECTIONS,
   type SignalEntityListSlug,
 } from '@/services/signalEntities';
-import { colors, gradients, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 function isSignalSlug(s: string): s is SignalEntityListSlug {
   return SIGNAL_ENTITY_SECTIONS.some((x) => x.listSlug === s);
@@ -104,8 +103,6 @@ export default function SignalsCatalogEditScreen() {
   const { entity, id } = useLocalSearchParams<{ entity: string; id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const insets = useSafeAreaInsets();
-  const bg = gradients.background;
 
   const slug = (entity ?? '').toLowerCase();
   const rawId = (id ?? '').trim();
@@ -366,13 +363,7 @@ export default function SignalsCatalogEditScreen() {
       : null;
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <ScreenShell style={{ paddingHorizontal: spacing.xl }}>
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"
@@ -624,14 +615,11 @@ export default function SignalsCatalogEditScreen() {
             </Button>
           </KeyboardAvoidingScroll>
         )}
-      </View>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: spacing.xl },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

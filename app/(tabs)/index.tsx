@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Ionicons } from '@expo/vector-icons';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -18,7 +18,7 @@ import {
   type DreamAnalyticsOverview,
   type DreamAnalyticsTopEntity,
 } from '@/services';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 const CATALOG_ROWS: {
   key: keyof DreamAnalyticsOverview['catalogTotals'];
@@ -98,7 +98,6 @@ function TopList({
 }
 
 export default function HomeScreen() {
-  const bg = gradients.background;
   const insets = useSafeAreaInsets();
 
   const analyticsQuery = useQuery({
@@ -111,12 +110,7 @@ export default function HomeScreen() {
   const loading = analyticsQuery.isPending;
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={s.root}
-    >
+    <ScreenShell>
       <ScrollView
         style={s.scroll}
         contentContainerStyle={[
@@ -199,12 +193,11 @@ export default function HomeScreen() {
           </>
         ) : null}
       </ScrollView>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: spacing.xl, gap: spacing.lg },
   header: { marginBottom: spacing.sm },

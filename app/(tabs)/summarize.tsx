@@ -8,8 +8,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Ionicons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
 import { Button } from '@/components/ui/Button';
@@ -21,7 +21,7 @@ import {
   dreamSessionsService,
   type SummarizeRecentLimit,
 } from '@/services';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 const LIMIT_OPTIONS: SelectOption[] = [5, 10, 15, 20].map((n) => ({
   value: String(n),
@@ -47,7 +47,6 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 type SummarizeMode = 'limit' | 'dates';
 
 export default function SummarizeScreen() {
-  const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [mode, setMode] = useState<SummarizeMode>('limit');
@@ -261,12 +260,7 @@ export default function SummarizeScreen() {
   );
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
+    <ScreenShell>
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -360,14 +354,11 @@ export default function SummarizeScreen() {
       >
         {filterBody}
       </Modal>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   scroll: {
     paddingHorizontal: spacing.lg,
     gap: spacing.lg,

@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenShell } from '@/components/layout/ScreenShell';
 import { API_BASE_URL } from '@/services/config';
 import {
   apiErrorMessage,
@@ -16,7 +17,7 @@ import {
   type BackendMeta,
 } from '@/services';
 import { getClientBuildInfo } from '@/lib/buildInfo';
-import { colors, gradients, palette, radius, spacing, typography } from '@/theme';
+import { colors, palette, radius, spacing, typography } from '@/theme';
 
 function formatBuildDate(iso: string): string {
   if (!iso?.trim()) return '—';
@@ -184,7 +185,6 @@ function InfoCard({
 }
 
 export default function SystemInfoScreen() {
-  const bg = gradients.background;
   const insets = useSafeAreaInsets();
   const client = getClientBuildInfo();
   const [backendMeta, setBackendMeta] = useState<BackendMeta | null>(null);
@@ -241,12 +241,7 @@ export default function SystemInfoScreen() {
   const backSoft = 'rgba(109, 179, 255, 0.12)';
 
   return (
-    <LinearGradient
-      colors={[...bg.colors]}
-      start={bg.start}
-      end={bg.end}
-      style={styles.root}
-    >
+    <ScreenShell>
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -325,12 +320,11 @@ export default function SystemInfoScreen() {
           />
         ) : null}
       </ScrollView>
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
   scroll: {
     paddingHorizontal: spacing.lg,
     gap: spacing.lg,
