@@ -70,6 +70,51 @@ const KIND_VARIANTS = [
   'rose',
 ] as const;
 
+const ENTITY_ICON: Record<SignalEntityListSlug, keyof typeof Ionicons.glyphMap> = {
+  characters: 'person-outline',
+  locations: 'location-outline',
+  objects: 'cube-outline',
+  events: 'flash-outline',
+  'life-context': 'globe-outline',
+  feelings: 'heart-outline',
+};
+
+const ENTITY_ACCENT: Record<
+  SignalEntityListSlug,
+  { color: string; bg: string; border: string }
+> = {
+  characters: {
+    color: '#d8b4ff',
+    bg: 'rgba(172, 111, 255, 0.14)',
+    border: 'rgba(172, 111, 255, 0.28)',
+  },
+  locations: {
+    color: '#8fd1ff',
+    bg: 'rgba(80, 168, 255, 0.14)',
+    border: 'rgba(80, 168, 255, 0.28)',
+  },
+  objects: {
+    color: '#7ee7c8',
+    bg: 'rgba(64, 240, 160, 0.12)',
+    border: 'rgba(64, 240, 160, 0.28)',
+  },
+  events: {
+    color: '#ffd58a',
+    bg: 'rgba(255, 196, 92, 0.14)',
+    border: 'rgba(255, 196, 92, 0.28)',
+  },
+  'life-context': {
+    color: '#f6a6d7',
+    bg: 'rgba(236, 120, 184, 0.14)',
+    border: 'rgba(236, 120, 184, 0.28)',
+  },
+  feelings: {
+    color: '#ff9ea1',
+    bg: 'rgba(255, 118, 118, 0.14)',
+    border: 'rgba(255, 118, 118, 0.28)',
+  },
+};
+
 function formatDreamDateTime(d: Date): string {
   return new Intl.DateTimeFormat('es', {
     weekday: 'long',
@@ -102,7 +147,7 @@ function feelingKindLabel(kind: string): string {
 type EntitySectionDef = {
   title: string;
   slug: SignalEntityListSlug;
-  rows: { id: string; primary: string; secondary?: string }[];
+  rows: { id: string; primary: string; secondary?: string; imageUri?: string }[];
 };
 
 export type DreamSessionReadViewProps = {
@@ -119,6 +164,16 @@ export function DreamSessionReadView({
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollOffset(scrollRef);
   const heroHeight = Math.max(280, Math.min(width * 0.92, 420));
+  const entityGridWidth = Math.max(width - spacing.sm * 2, 0);
+  const entityColumns = Math.max(1, Math.min(5, Math.floor(entityGridWidth / 140)));
+  const entityCardWidth =
+    entityColumns > 1
+      ? Math.max(
+          (entityGridWidth - spacing.sm * Math.max(entityColumns - 1, 0)) /
+            entityColumns,
+          0
+        )
+      : undefined;
 
   const [tab, setTab] = useState<'dream' | 'elements'>('dream');
   const [heroImageIndex, setHeroImageIndex] = useState(0);
@@ -135,6 +190,7 @@ export function DreamSessionReadView({
           id,
           primary: row?.name?.trim() || 'Personaje',
           secondary: row?.description?.trim(),
+          imageUri: row?.imageUri,
         };
       });
       out.push({ title: 'Personajes', slug: 'characters', rows });
@@ -148,6 +204,7 @@ export function DreamSessionReadView({
           id,
           primary: row?.name?.trim() || 'Lugar',
           secondary: row?.description?.trim(),
+          imageUri: row?.imageUri,
         };
       });
       out.push({ title: 'Lugares', slug: 'locations', rows });
@@ -161,6 +218,7 @@ export function DreamSessionReadView({
           id,
           primary: row?.name?.trim() || 'Objeto',
           secondary: row?.description?.trim(),
+          imageUri: row?.imageUri,
         };
       });
       out.push({ title: 'Objetos', slug: 'objects', rows });
@@ -515,7 +573,7 @@ export function DreamSessionReadView({
       ) : (
         <Animated.ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.elementsScrollContent}
           showsVerticalScrollIndicator={false}
         >
           {!hasAnyEntity ? (
@@ -534,7 +592,29 @@ export function DreamSessionReadView({
           ) : (
             entitySections.map((sec) => (
               <View key={sec.slug} style={styles.section}>
-                <Text style={styles.sectionTitle}>{sec.title}</Text>
+                <View
+                  style={[
+                    styles.entitySectionBadge,
+                    {
+                      backgroundColor: ENTITY_ACCENT[sec.slug].bg,
+                      borderColor: ENTITY_ACCENT[sec.slug].border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={ENTITY_ICON[sec.slug]}
+                    size={16}
+                    color={ENTITY_ACCENT[sec.slug].color}
+                  />
+                  <Text
+                    style={[
+                      styles.entitySectionTitle,
+                      { color: ENTITY_ACCENT[sec.slug].color },
+                    ]}
+                  >
+                    {sec.title}
+                  </Text>
+                </View>
                 <View style={styles.entityList}>
                   {sec.rows.map((row) => (
                     <Pressable
@@ -544,10 +624,29 @@ export function DreamSessionReadView({
                       onPress={() => goSignal(sec.slug, row.id)}
                       style={({ pressed }) => [
                         styles.entityRow,
+                        entityCardWidth != null && { width: entityCardWidth },
                         !row.id && styles.entityRowDisabled,
                         pressed && row.id && { opacity: 0.85 },
                       ]}
                     >
+                      <View style={styles.entityMedia}>
+                        {row.imageUri ? (
+                          <Image
+                            source={{ uri: row.imageUri }}
+                            style={styles.entityImage}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        ) : (
+                          <View style={styles.entityImagePlaceholder}>
+                            <Ionicons
+                              name={ENTITY_ICON[sec.slug]}
+                              size={22}
+                              color={colors.accentMuted}
+                            />
+                          </View>
+                        )}
+                      </View>
                       <View style={styles.entityText}>
                         <Text style={styles.entityPrimary} numberOfLines={2}>
                           {row.primary}
@@ -616,6 +715,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
   },
   scrollContent: {
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
+  },
+  elementsScrollContent: {
+    paddingHorizontal: spacing.sm,
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
   },
@@ -733,6 +837,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
+  entitySectionBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  entitySectionTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -817,31 +937,46 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   entityList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  entityRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: 'rgba(124, 92, 196, 0.22)',
     backgroundColor: 'rgba(0, 0, 0, 0.18)',
-    overflow: 'hidden',
-  },
-  entityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    padding: spacing.sm,
   },
   entityRowDisabled: { opacity: 0.6 },
+  entityMedia: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  entityImage: {
+    width: '100%',
+    height: '100%',
+  },
+  entityImagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   entityText: { flex: 1, gap: 4 },
   entityPrimary: {
-    fontSize: typography.sizes.md,
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.text,
   },
   entitySecondary: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.xs,
     color: colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 18,
   },
 });
