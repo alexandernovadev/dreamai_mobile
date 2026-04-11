@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useWindowDimensions, View, StyleSheet } from "react-native";
 import type { DreamSession, DreamSessionHydratedMaps } from "@/services";
 import { DreamTabBar, type DreamTab } from "./DreamTabBar";
@@ -10,14 +9,20 @@ import { spacing } from "@/theme";
 export type DreamSessionReadViewProps = {
   session: DreamSession;
   hydrated: DreamSessionHydratedMaps;
+  activeTab: DreamTab;
+  onTabChange: (tab: DreamTab) => void;
+  /** Ruta a donde volver al pulsar "back" desde signals. */
+  returnToBase?: string;
 };
 
 export function DreamSessionReadView({
   session,
   hydrated,
+  activeTab,
+  onTabChange,
+  returnToBase,
 }: DreamSessionReadViewProps) {
   const { width } = useWindowDimensions();
-  const [tab, setTab] = useState<DreamTab>("dream");
 
   const entitySections = useEntitySections({ session, hydrated });
   const entityGridWidth = Math.max(width - spacing.sm * 2, 0);
@@ -28,9 +33,9 @@ export function DreamSessionReadView({
 
   return (
     <View style={styles.root}>
-      <DreamTabBar activeTab={tab} onTabPress={setTab} />
+      <DreamTabBar activeTab={activeTab} onTabPress={onTabChange} />
 
-      {tab === "dream" ? (
+      {activeTab === "dream" ? (
         <DreamDreamView session={session} />
       ) : (
         <DreamElementsView
@@ -38,6 +43,8 @@ export function DreamSessionReadView({
           session={session}
           entityGridWidth={entityGridWidth}
           entityColumns={entityColumns}
+          activeTab={activeTab}
+          returnToBase={returnToBase}
         />
       )}
     </View>

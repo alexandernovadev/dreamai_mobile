@@ -1,15 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import {
+  Redirect,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import type { DreamTab } from "@/components/dreams/DreamSessionReadView";
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
@@ -22,8 +28,12 @@ import { colors, radius, spacing, typography } from '@/theme';
  * pestaña Elementos (catálogo Signals). La edición está en `/dream/edit/:id`.
  */
 export default function DreamDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{
+    id: string;
+    tab?: DreamTab;
+  }>();
   const raw = Array.isArray(id) ? id[0] : id;
+  const activeTab = tabParam === "elements" ? "elements" : "dream";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const skipNextFocusRefetch = useRef(true);
@@ -63,6 +73,10 @@ export default function DreamDetailScreen() {
     return <Redirect href="/dream" />;
   }
 
+  function handleTabChange(tab: DreamTab) {
+    router.setParams({ tab });
+  }
+
   return (
     <ScreenShell style={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom }}>
         <ScreenHeader
@@ -88,7 +102,13 @@ export default function DreamDetailScreen() {
             </Pressable>
           </View>
         ) : session && hydratedMaps ? (
-          <DreamSessionReadView session={session} hydrated={hydratedMaps} />
+          <DreamSessionReadView
+            session={session}
+            hydrated={hydratedMaps}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            returnToBase={`/dream/${raw}${activeTab === 'elements' ? '?tab=elements' : ''}`}
+          />
         ) : null}
     </ScreenShell>
   );

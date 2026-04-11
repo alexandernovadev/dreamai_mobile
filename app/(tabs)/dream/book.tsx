@@ -13,7 +13,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { Ionicons } from '@expo/vector-icons';
-import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
+import { DreamSessionReadView, type DreamTab } from '@/components/dreams/DreamSessionReadView';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -32,6 +32,8 @@ type DreamBookPageProps = {
 };
 
 function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
+  const [activeTab, setActiveTab] = useState<DreamTab>('dream');
+
   const hydratedQuery = useQuery({
     queryKey: queryKeys.dreamSessions.hydrated(session.id),
     queryFn: () => dreamSessionsService.getHydrated(session.id),
@@ -72,7 +74,13 @@ function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
           </Pressable>
         </View>
       ) : hydratedSession && hydrated ? (
-        <DreamSessionReadView session={hydratedSession} hydrated={hydrated} />
+        <DreamSessionReadView
+          session={hydratedSession}
+          hydrated={hydrated}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          returnToBase={`/dream/book?startId=${session.id}`}
+        />
       ) : null}
     </View>
   );

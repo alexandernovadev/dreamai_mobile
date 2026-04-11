@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import type { DreamTab } from './DreamTabBar';
 import type { DreamSession } from '@/services';
 import { ENTITY_ACCENT, ENTITY_ICON } from './constants';
 import type { EntitySectionDef } from './types';
@@ -11,19 +12,25 @@ type DreamEntitySectionProps = {
   section: EntitySectionDef;
   session: DreamSession;
   cardWidth?: number;
+  activeTab: DreamTab;
+  returnToBase?: string;
 };
 
 export function DreamEntitySection({
   section,
   session,
   cardWidth,
+  activeTab,
+  returnToBase,
 }: DreamEntitySectionProps) {
   const router = useRouter();
   const accent = ENTITY_ACCENT[section.slug];
 
   function goSignal(catalogId: string) {
     if (!catalogId) return;
-    const returnTo = encodeURIComponent(`/dream/${session.id}`);
+    const fallback = `/dream/${session.id}${activeTab === 'elements' ? '?tab=elements' : ''}`;
+    const base = returnToBase ?? fallback;
+    const returnTo = encodeURIComponent(base);
     router.push(`/signals/${section.slug}/${catalogId}?returnTo=${returnTo}`);
   }
 

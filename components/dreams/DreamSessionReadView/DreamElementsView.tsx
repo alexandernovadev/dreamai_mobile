@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { DreamTab } from './DreamTabBar';
 import type { DreamSession } from '@/services';
 import type { EntitySectionDef } from './types';
 import { DreamEntitySection } from './DreamEntitySection';
@@ -10,6 +11,8 @@ type DreamElementsViewProps = {
   session: DreamSession;
   entityGridWidth: number;
   entityColumns: number;
+  activeTab: DreamTab;
+  returnToBase?: string;
 };
 
 export function DreamElementsView({
@@ -17,6 +20,8 @@ export function DreamElementsView({
   session,
   entityGridWidth,
   entityColumns,
+  activeTab,
+  returnToBase,
 }: DreamElementsViewProps) {
   const entityCardWidth =
     entityColumns > 1
@@ -43,20 +48,32 @@ export function DreamElementsView({
   }
 
   return (
-    <>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       {entitySections.map((sec) => (
         <DreamEntitySection
           key={sec.slug}
           section={sec}
           session={session}
           cardWidth={entityCardWidth}
+          activeTab={activeTab}
+          returnToBase={returnToBase}
         />
       ))}
-    </>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
+  },
   emptyBox: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
