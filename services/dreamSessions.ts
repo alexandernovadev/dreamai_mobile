@@ -153,9 +153,9 @@ export type DreamThoughtSuggestResponse = {
 
 /** Respuesta de `GET /dream-sessions/:id/hydrated`. */
 export type DreamSessionHydratedMaps = {
-  characters: Record<string, { id: string; name: string; description?: string }>;
-  locations: Record<string, { id: string; name: string; description?: string }>;
-  objects: Record<string, { id: string; name: string; description?: string }>;
+  characters: Record<string, { id: string; name: string; description?: string; imageUri?: string }>;
+  locations: Record<string, { id: string; name: string; description?: string; imageUri?: string }>;
+  objects: Record<string, { id: string; name: string; description?: string; imageUri?: string }>;
   contextLife: Record<
     string,
     { id: string; title: string; description?: string }
