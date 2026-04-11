@@ -9,7 +9,8 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors } from '@/theme';
+import { formFieldStyles, formFieldBase } from './formFieldStyles';
 
 const DEFAULT_MIN_HEIGHT = 128;
 
@@ -46,9 +47,9 @@ export function Textarea({
   const a11yLabel = accessibilityLabel ?? label;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[formFieldStyles.container, containerStyle]}>
       {label ? (
-        <Text style={styles.label} nativeID={`${label}-textarea-label`}>
+        <Text style={formFieldStyles.label} nativeID={`${label}-textarea-label`}>
           {label}
         </Text>
       ) : null}
@@ -69,58 +70,17 @@ export function Textarea({
           onBlur?.(e);
         }}
         style={[
-          styles.textarea,
+          formFieldBase,
           { minHeight },
           maxHeight != null && { maxHeight },
-          focused && !error && styles.fieldFocused,
-          !!error && styles.fieldError,
-          disabled && styles.fieldDisabled,
+          focused && !error && formFieldStyles.focused,
+          !!error && formFieldStyles.errorBorder,
+          disabled && formFieldStyles.disabled,
           inputStyle,
         ]}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? <Text style={formFieldStyles.error}>{error}</Text> : null}
+      {!error && hint ? <Text style={formFieldStyles.hint}>{hint}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    marginBottom: spacing.sm,
-  },
-  textarea: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-    backgroundColor: colors.surfaceMuted,
-    color: colors.text,
-    fontSize: typography.sizes.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  fieldFocused: {
-    borderColor: colors.accent,
-  },
-  fieldError: {
-    borderColor: colors.danger,
-  },
-  fieldDisabled: {
-    opacity: 0.45,
-  },
-  error: {
-    marginTop: spacing.sm,
-    color: colors.danger,
-    fontSize: typography.sizes.sm,
-  },
-  hint: {
-    marginTop: spacing.sm,
-    color: colors.textMuted,
-    fontSize: typography.sizes.sm,
-  },
-});

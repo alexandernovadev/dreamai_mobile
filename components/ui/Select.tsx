@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, radius, spacing, typography } from '@/theme';
+import { formFieldStyles } from './formFieldStyles';
 
 export type SelectOption = {
   value: string;
@@ -103,9 +104,9 @@ export function Select({
   const a11yLabel = label ?? placeholder;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[formFieldStyles.container, containerStyle]}>
       {label ? (
-        <Text style={styles.label} nativeID={`${label}-select-label`}>
+        <Text style={formFieldStyles.label} nativeID={`${label}-select-label`}>
           {label}
         </Text>
       ) : null}
@@ -119,9 +120,9 @@ export function Select({
         onPress={openSheet}
         style={({ pressed }) => [
           styles.trigger,
-          open && !error && styles.triggerFocused,
-          !!error && styles.triggerError,
-          disabled && styles.triggerDisabled,
+          open && !error && formFieldStyles.focused,
+          !!error && formFieldStyles.errorBorder,
+          disabled && formFieldStyles.disabled,
           pressed && !disabled && styles.triggerPressed,
         ]}
       >
@@ -142,8 +143,8 @@ export function Select({
         />
       </Pressable>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? <Text style={formFieldStyles.error}>{error}</Text> : null}
+      {!error && hint ? <Text style={formFieldStyles.hint}>{hint}</Text> : null}
 
       <Modal
         visible={open}
@@ -182,15 +183,6 @@ export function Select({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    marginBottom: spacing.sm,
-  },
   trigger: {
     minHeight: 48,
     borderRadius: radius.lg,
@@ -202,15 +194,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  triggerFocused: {
-    borderColor: colors.accent,
-  },
-  triggerError: {
-    borderColor: colors.danger,
-  },
-  triggerDisabled: {
-    opacity: 0.45,
   },
   triggerPressed: {
     opacity: 0.92,
@@ -226,16 +209,6 @@ const styles = StyleSheet.create({
   },
   chevron: {
     flexShrink: 0,
-  },
-  error: {
-    marginTop: spacing.sm,
-    color: colors.danger,
-    fontSize: typography.sizes.sm,
-  },
-  hint: {
-    marginTop: spacing.sm,
-    color: colors.textMuted,
-    fontSize: typography.sizes.sm,
   },
   modalRoot: {
     flex: 1,

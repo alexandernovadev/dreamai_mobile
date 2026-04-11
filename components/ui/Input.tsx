@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
+import { formFieldStyles, formFieldBase } from './formFieldStyles';
 
 export type InputProps = Omit<TextInputProps, 'style'> & {
   label?: string;
@@ -38,9 +39,9 @@ export function Input({
   const a11yLabel = accessibilityLabel ?? label;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[formFieldStyles.container, containerStyle]}>
       {label ? (
-        <Text style={styles.label} nativeID={`${label}-label`}>
+        <Text style={formFieldStyles.label} nativeID={`${label}-label`}>
           {label}
         </Text>
       ) : null}
@@ -58,57 +59,16 @@ export function Input({
           onBlur?.(e);
         }}
         style={[
-          styles.input,
-          focused && !error && styles.inputFocused,
-          !!error && styles.inputError,
-          disabled && styles.inputDisabled,
+          formFieldBase,
+          { minHeight: 48 },
+          focused && !error && formFieldStyles.focused,
+          !!error && formFieldStyles.errorBorder,
+          disabled && formFieldStyles.disabled,
           inputStyle,
         ]}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? <Text style={formFieldStyles.error}>{error}</Text> : null}
+      {!error && hint ? <Text style={formFieldStyles.hint}>{hint}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    marginBottom: spacing.sm,
-  },
-  input: {
-    minHeight: 48,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-    backgroundColor: colors.surfaceMuted,
-    color: colors.text,
-    fontSize: typography.sizes.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  inputFocused: {
-    borderColor: colors.accent,
-  },
-  inputError: {
-    borderColor: colors.danger,
-  },
-  inputDisabled: {
-    opacity: 0.45,
-  },
-  error: {
-    marginTop: spacing.sm,
-    color: colors.danger,
-    fontSize: typography.sizes.sm,
-  },
-  hint: {
-    marginTop: spacing.sm,
-    color: colors.textMuted,
-    fontSize: typography.sizes.sm,
-  },
-});
