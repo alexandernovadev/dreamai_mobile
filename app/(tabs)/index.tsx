@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { AsyncState } from '@/components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -134,23 +134,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {loading && !data ? (
-          <View style={s.center}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={s.muted}>Cargando estadísticas…</Text>
-          </View>
-        ) : err && !data ? (
-          <View style={s.center}>
-            <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
-            <Text style={s.error}>{err}</Text>
-            <Pressable
-              onPress={() => void analyticsQuery.refetch()}
-              style={({ pressed }) => [s.retry, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={s.retryText}>Reintentar</Text>
-            </Pressable>
-          </View>
-        ) : data ? (
+        <AsyncState
+          loading={loading && !data}
+          loadingText="Cargando estadísticas…"
+          error={err && !data ? err : null}
+          onRetry={() => void analyticsQuery.refetch()}
+        />
+        {data && !loading && (
           <>
             <View style={s.statHero}>
               <Ionicons name="moon-outline" size={28} color={colors.accent} />
@@ -191,7 +181,7 @@ export default function HomeScreen() {
               rows={data.topObjects}
             />
           </>
-        ) : null}
+        )}
       </ScrollView>
     </ScreenShell>
   );

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { AsyncState } from '@/components/ui';
 import { EntityCatalogGridItem } from '@/components/signals/EntityCatalogGridItem';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage } from '@/services/api';
@@ -131,11 +132,12 @@ export default function SignalsEntityListScreen() {
           </View>
         ) : null}
 
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.accent} size="large" />
-          </View>
-        ) : (
+        <AsyncState
+          loading={loading}
+          error={errorMsg}
+          onRetry={() => void listQuery.refetch()}
+        />
+        {!loading && !errorMsg && (
           <FlatList
             data={items}
             keyExtractor={(it) => it.id}

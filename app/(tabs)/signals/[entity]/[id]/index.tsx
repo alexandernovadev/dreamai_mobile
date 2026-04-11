@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { AsyncState } from '@/components/ui';
 import { Image } from 'expo-image';
 import { apiErrorMessage } from '@/services/api';
 import {
@@ -146,13 +146,12 @@ export default function SignalsCatalogDetailScreen() {
           </Pressable>
         </View>
 
-        {detailQuery.isPending && slugOk ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.accent} size="large" />
-          </View>
-        ) : err ? (
-          <Text style={styles.err}>{err}</Text>
-        ) : view ? (
+        <AsyncState
+          loading={detailQuery.isPending && slugOk}
+          error={err}
+          onRetry={() => void detailQuery.refetch()}
+        />
+        {!detailQuery.isPending && !err && view && (
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
@@ -226,11 +225,6 @@ export default function SignalsCatalogDetailScreen() {
               )}
             </View>
           </ScrollView>
-        ) : (
-          <View style={styles.center}>
-            <Ionicons name="document-outline" size={40} color={colors.textMuted} />
-            <Text style={styles.err}>Sin datos disponibles.</Text>
-          </View>
         )}
     </ScreenShell>
   );

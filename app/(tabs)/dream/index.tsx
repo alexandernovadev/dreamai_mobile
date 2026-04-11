@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -17,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { AsyncState } from '@/components/ui';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -86,24 +86,13 @@ export default function DreamListScreen() {
           }
         />
 
-        {loading ? (
-          <View style={s.loadingBox}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={s.loadingText}>Cargando sueños…</Text>
-          </View>
-        ) : error && dreams.length === 0 ? (
-          <View style={s.errorBox}>
-            <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
-            <Text style={s.errorText}>{error}</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void listQuery.refetch()}
-              style={({ pressed }) => [s.retryBtn, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={s.retryBtnText}>Reintentar</Text>
-            </Pressable>
-          </View>
-        ) : (
+        <AsyncState
+          loading={loading}
+          loadingText="Cargando sueños…"
+          error={error && dreams.length === 0 ? error : null}
+          onRetry={() => void listQuery.refetch()}
+        />
+        {!loading && !(error && dreams.length === 0) && (
           <FlatList
             data={dreams}
             key={gridColumns}
@@ -292,46 +281,6 @@ const s = StyleSheet.create({
   subtitle: {
     fontSize: typography.sizes.sm,
     color: colors.textMuted,
-  },
-
-  loadingBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingBottom: spacing.xxxl,
-  },
-  loadingText: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-  },
-
-  errorBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  errorText: {
-    fontSize: typography.sizes.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  retryBtn: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-  },
-  retryBtnText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.accent,
   },
 
   listContent: {

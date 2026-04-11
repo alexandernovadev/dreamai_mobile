@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import type { ViewToken } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ScreenShell } from '@/components/layout/ScreenShell';
+import { AsyncState } from '@/components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { DreamSessionReadView, type DreamTab } from '@/components/dreams/DreamSessionReadView';
 import { DREAM_LIST_QUERY_PARAMS } from '@/lib/dreamListQuery';
@@ -52,28 +52,17 @@ function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
 
   return (
     <View style={[ps.page, { width: pageWidth, height: pageHeight }]}>
-      {loading ? (
-        <View style={ps.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={ps.muted}>Cargando sueño…</Text>
-        </View>
-      ) : error ? (
-        <View style={ps.center}>
-          <Ionicons
-            name="cloud-offline-outline"
-            size={40}
-            color={colors.textMuted}
-          />
-          <Text style={ps.errorText}>{error}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void hydratedQuery.refetch()}
-            style={({ pressed }) => [ps.retryBtn, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={ps.retryText}>Reintentar</Text>
-          </Pressable>
-        </View>
-      ) : hydratedSession && hydrated ? (
+      {pageHeight === 0 ? (
+        <View />
+      ) : (
+        <AsyncState
+          loading={loading}
+          loadingText="Cargando sueño…"
+          error={error}
+          onRetry={() => void hydratedQuery.refetch()}
+        />
+      )}
+      {pageHeight > 0 && !loading && !error && hydratedSession && hydrated && (
         <DreamSessionReadView
           session={hydratedSession}
           hydrated={hydrated}
@@ -81,7 +70,7 @@ function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
           onTabChange={setActiveTab}
           returnToBase={`/dream/book?startId=${session.id}`}
         />
-      ) : null}
+      )}
     </View>
   );
 }
@@ -89,36 +78,6 @@ function DreamBookPage({ session, pageWidth, pageHeight }: DreamBookPageProps) {
 const ps = StyleSheet.create({
   page: {
     paddingHorizontal: 0,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  muted: {
-    fontSize: typography.sizes.sm,
-    color: colors.textMuted,
-  },
-  errorText: {
-    fontSize: typography.sizes.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: spacing.lg,
-  },
-  retryBtn: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.buttonBorder,
-  },
-  retryText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.accent,
   },
 });
 
@@ -282,28 +241,13 @@ export default function DreamBookScreen() {
         </View>
 
         {/* ── Body ── */}
-        {loading ? (
-          <View style={s.center}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={s.muted}>Cargando sueños…</Text>
-          </View>
-        ) : listError && dreams.length === 0 ? (
-          <View style={s.center}>
-            <Ionicons
-              name="cloud-offline-outline"
-              size={48}
-              color={colors.textMuted}
-            />
-            <Text style={s.errorText}>{listError}</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void listQuery.refetch()}
-              style={({ pressed }) => [s.retryBtn, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={s.retryText}>Reintentar</Text>
-            </Pressable>
-          </View>
-        ) : dreams.length === 0 ? (
+        <AsyncState
+          loading={loading}
+          loadingText="Cargando sueños…"
+          error={listError && dreams.length === 0 ? listError : null}
+          onRetry={() => void listQuery.refetch()}
+        />
+        {!loading && !(listError && dreams.length === 0) && dreams.length === 0 && (
           <View style={s.center}>
             <View style={s.emptyIconWrap}>
               <Ionicons name="book-outline" size={48} color={colors.accentMuted} />
@@ -313,7 +257,8 @@ export default function DreamBookScreen() {
               Registra tu primer sueño para comenzar tu libro onírico.
             </Text>
           </View>
-        ) : (
+        )}
+        {!loading && !(listError && dreams.length === 0) && dreams.length > 0 && (
           <FlatList
               ref={flatListRef}
               data={dreams}

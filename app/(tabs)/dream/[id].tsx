@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -14,14 +13,14 @@ import {
   useRouter,
 } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import type { DreamTab } from "@/components/dreams/DreamSessionReadView";
 import { ScreenShell } from '@/components/layout/ScreenShell';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { DreamSessionReadView } from '@/components/dreams/DreamSessionReadView';
+import { AsyncState } from '@/components/ui';
 import { queryKeys } from '@/lib/queryKeys';
 import { apiErrorMessage, dreamSessionsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 /**
  * Detalle del sueño en solo lectura: narrativa, imágenes, reflexión, análisis y
@@ -85,23 +84,12 @@ export default function DreamDetailScreen() {
           onBack={() => router.back()}
         />
 
-        {loading ? (
-          <View style={s.center}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={s.muted}>Cargando…</Text>
-          </View>
-        ) : error ? (
-          <View style={s.center}>
-            <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
-            <Text style={s.errorText}>{error}</Text>
-            <Pressable
-              onPress={() => void hydratedQuery.refetch()}
-              style={({ pressed }) => [s.retryBtn, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={s.retryText}>Reintentar</Text>
-            </Pressable>
-          </View>
-        ) : session && hydratedMaps ? (
+        <AsyncState
+          loading={loading}
+          error={error}
+          onRetry={() => void hydratedQuery.refetch()}
+        />
+        {!loading && !error && session && hydratedMaps && (
           <DreamSessionReadView
             session={session}
             hydrated={hydratedMaps}
@@ -109,38 +97,13 @@ export default function DreamDetailScreen() {
             onTabChange={handleTabChange}
             returnToBase={`/dream/${raw}${activeTab === 'elements' ? '?tab=elements' : ''}`}
           />
-        ) : null}
+        )}
     </ScreenShell>
   );
 }
 
 const s = StyleSheet.create({
-  center: {
+  screenContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.xxxl,
-  },
-  muted: { fontSize: typography.sizes.sm, color: colors.textMuted },
-  errorText: {
-    fontSize: typography.sizes.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: spacing.lg,
-  },
-  retryBtn: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(124, 92, 196, 0.35)',
-    backgroundColor: 'rgba(124, 92, 196, 0.12)',
-  },
-  retryText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.accent,
   },
 });
