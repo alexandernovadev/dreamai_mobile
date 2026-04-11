@@ -10,6 +10,8 @@ export {
   spacing,
   radius,
   typography,
+  statusTone,
+  statusLabel,
 } from './tokens';
 export type {
   BadgeVariant,

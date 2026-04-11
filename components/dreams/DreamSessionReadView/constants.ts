@@ -1,41 +1,11 @@
 import type { SignalEntityListSlug } from '@/services/signalEntities';
-import type { DreamSessionStatus } from '@/services';
 import { Ionicons } from '@expo/vector-icons';
+import { statusTone, statusLabel } from '@/theme';
 
-// ── Status labels & tones ────────────────────────────────────────────────
+// ── Status labels & tones (from theme) ──────────────────────────────────
 
-export const STATUS_LABEL: Record<DreamSessionStatus, string> = {
-  DRAFT: 'Borrador',
-  ELEMENTS: 'Elementos',
-  STRUCTURED: 'Detalle',
-  THOUGHT: 'Reflexión',
-};
-
-export const STATUS_TONE: Record<
-  DreamSessionStatus,
-  { bg: string; border: string; text: string }
-> = {
-  DRAFT: {
-    bg: 'rgba(124, 92, 196, 0.14)',
-    border: 'rgba(124, 92, 196, 0.35)',
-    text: '#c4b0f0',
-  },
-  ELEMENTS: {
-    bg: 'rgba(80, 168, 255, 0.14)',
-    border: 'rgba(80, 168, 255, 0.35)',
-    text: '#8cc8ff',
-  },
-  STRUCTURED: {
-    bg: 'rgba(64, 240, 160, 0.12)',
-    border: 'rgba(64, 240, 160, 0.35)',
-    text: '#80f0b8',
-  },
-  THOUGHT: {
-    bg: 'rgba(240, 200, 96, 0.14)',
-    border: 'rgba(240, 200, 96, 0.35)',
-    text: '#f0d890',
-  },
-};
+export const STATUS_LABEL = statusLabel;
+export const STATUS_TONE = statusTone;
 
 // ── Dream kind chip variants ──────────────────────────────────────────────
 

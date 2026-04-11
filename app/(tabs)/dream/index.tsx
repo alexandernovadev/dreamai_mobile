@@ -24,41 +24,8 @@ import {
   dreamSessionsService,
   type DreamSessionStatus,
 } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography, statusTone, statusLabel } from '@/theme';
 import { dreamDateLabel, dreamSnippet } from '@/utils/dream';
-
-const STATUS_LABEL: Record<DreamSessionStatus, string> = {
-  DRAFT: 'Borrador',
-  ELEMENTS: 'Elementos',
-  STRUCTURED: 'Detalle',
-  THOUGHT: 'Reflexión',
-};
-
-const STATUS_TONE: Record<
-  DreamSessionStatus,
-  { bg: string; border: string; text: string }
-> = {
-  DRAFT: {
-    bg: 'rgba(124, 92, 196, 0.14)',
-    border: 'rgba(124, 92, 196, 0.35)',
-    text: '#c4b0f0',
-  },
-  ELEMENTS: {
-    bg: 'rgba(80, 168, 255, 0.14)',
-    border: 'rgba(80, 168, 255, 0.35)',
-    text: '#8cc8ff',
-  },
-  STRUCTURED: {
-    bg: 'rgba(64, 240, 160, 0.12)',
-    border: 'rgba(64, 240, 160, 0.35)',
-    text: '#80f0b8',
-  },
-  THOUGHT: {
-    bg: 'rgba(240, 200, 96, 0.14)',
-    border: 'rgba(240, 200, 96, 0.35)',
-    text: '#f0d890',
-  },
-};
 
 export default function DreamListScreen() {
   const insets = useSafeAreaInsets();
@@ -169,7 +136,7 @@ export default function DreamListScreen() {
               </View>
             }
             renderItem={({ item }) => {
-              const tone = STATUS_TONE[item.status];
+              const tone = statusTone[item.status];
               const coverUri = item.dreamImages[0] ?? null;
               return (
                 <View style={[s.cardCol, { width: cardWidth }]}>
@@ -220,7 +187,7 @@ export default function DreamListScreen() {
                             ]}
                           >
                             <Text style={[s.statusPillText, { color: tone.text }]}>
-                              {STATUS_LABEL[item.status]}
+                              {statusLabel[item.status]}
                             </Text>
                           </View>
                         </Pressable>

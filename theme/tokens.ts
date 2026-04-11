@@ -169,6 +169,41 @@ export const badgeShineGradient = {
   end: { x: 0.9, y: 0.85 },
 } as const;
 
+/**
+ * Sesiones de sueño — estados del flujo DRAFT → ELEMENTS → STRUCTURED → THOUGHT.
+ * Cada estado tiene fondo, borde y texto para el badge/pill.
+ */
+export const statusTone = {
+  DRAFT: {
+    bg: 'rgba(124, 92, 196, 0.14)',
+    border: 'rgba(124, 92, 196, 0.35)',
+    text: '#c4b0f0',
+  },
+  ELEMENTS: {
+    bg: 'rgba(80, 168, 255, 0.14)',
+    border: 'rgba(80, 168, 255, 0.35)',
+    text: '#8cc8ff',
+  },
+  STRUCTURED: {
+    bg: 'rgba(64, 240, 160, 0.12)',
+    border: 'rgba(64, 240, 160, 0.35)',
+    text: '#80f0b8',
+  },
+  THOUGHT: {
+    bg: 'rgba(240, 200, 96, 0.14)',
+    border: 'rgba(240, 200, 96, 0.35)',
+    text: '#f0d890',
+  },
+} as const;
+
+/** Etiquetas legibles para cada estado de sesión. */
+export const statusLabel = {
+  DRAFT: 'Borrador',
+  ELEMENTS: 'Elementos',
+  STRUCTURED: 'Detalle',
+  THOUGHT: 'Reflexión',
+} as const;
+
 export const spacing = {
   /** 4 */
   xs: 4,
