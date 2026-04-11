@@ -1,11 +1,15 @@
-/** Query string para `GET` (valores vacíos se omiten). */
+/** Query string para `GET` (valores vacíos se omiten). Soporta arrays como `?k=a&k=b`. */
 export function buildQuery(
-  params: Record<string, string | number | boolean | undefined>,
+  params: Record<string, string | number | boolean | string[] | undefined>,
 ): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === '') continue;
-    sp.set(k, String(v));
+    if (Array.isArray(v)) {
+      v.forEach((item) => sp.append(k, String(item)));
+    } else {
+      sp.set(k, String(v));
+    }
   }
   const s = sp.toString();
   return s ? `?${s}` : '';

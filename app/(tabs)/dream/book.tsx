@@ -306,8 +306,7 @@ export default function DreamBookScreen() {
             </Text>
           </View>
         ) : (
-          <>
-            <FlatList
+          <FlatList
               ref={flatListRef}
               data={dreams}
               keyExtractor={(item) => item.id}
@@ -331,8 +330,6 @@ export default function DreamBookScreen() {
                 />
               )}
             />
-
-          </>
         )}
     </ScreenShell>
   );

@@ -204,7 +204,9 @@ export type DreamAnalyticsOverview = {
 
 export const dreamSessionsService = {
   async getOne(id: string): Promise<DreamSession> {
-    const raw = await api.get<ApiDreamSession>(`/dream-sessions/${id}`);
+    const raw = await api.get<ApiDreamSession>(
+      `/dream-sessions/${encodeURIComponent(id)}`,
+    );
     return revive(raw);
   },
 
@@ -213,7 +215,7 @@ export const dreamSessionsService = {
     const raw = await api.get<{
       session: ApiDreamSession;
       hydrated: DreamSessionHydratedMaps;
-    }>(`/dream-sessions/${id}/hydrated`);
+    }>(`/dream-sessions/${encodeURIComponent(id)}/hydrated`);
     return { session: revive(raw.session), hydrated: raw.hydrated };
   },
 
@@ -247,7 +249,7 @@ export const dreamSessionsService = {
     input: UpdateDreamSessionInput,
   ): Promise<DreamSession> {
     const raw = await api.patch<ApiDreamSession>(
-      `/dream-sessions/${id}`,
+      `/dream-sessions/${encodeURIComponent(id)}`,
       stripUpdate(input),
     );
     return revive(raw);
