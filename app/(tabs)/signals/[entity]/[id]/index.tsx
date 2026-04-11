@@ -226,7 +226,12 @@ export default function SignalsCatalogDetailScreen() {
               )}
             </View>
           </ScrollView>
-        ) : null}
+        ) : (
+          <View style={styles.center}>
+            <Ionicons name="document-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.err}>Sin datos disponibles.</Text>
+          </View>
+        )}
     </ScreenShell>
   );
 }

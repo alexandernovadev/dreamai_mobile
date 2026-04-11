@@ -28,6 +28,8 @@ export function apiErrorMessage(e: unknown): string {
   return 'Error desconocido.';
 }
 
+const API_TIMEOUT_MS = 15_000; // 15s — evita queries "colgadas"
+
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 async function request<T>(
@@ -43,14 +45,23 @@ async function request<T>(
     headers['Content-Type'] = 'application/json';
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
   let res: Response;
   try {
     res = await fetch(url, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
-  } catch {
+    clearTimeout(timeoutId);
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new ApiError(0, `Timeout: el servidor no respondió en ${API_TIMEOUT_MS / 1000}s`);
+    }
     throw new ApiError(0, 'Network error');
   }
 
@@ -74,14 +85,22 @@ async function request<T>(
 /** POST multipart (p. ej. subida a Cloudinary). No fijar `Content-Type`: el runtime añade el boundary. */
 export async function postFormData<T>(path: string, formData: FormData): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { Accept: 'application/json' },
       body: formData,
+      signal: controller.signal,
     });
-  } catch {
+    clearTimeout(timeoutId);
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new ApiError(0, `Timeout: el servidor no respondió en ${API_TIMEOUT_MS / 1000}s`);
+    }
     throw new ApiError(0, 'Network error');
   }
 
