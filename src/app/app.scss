@@ -56,12 +56,10 @@
   flex-shrink: 0;
 }
 
-.shell__dot {
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
-  background: var(--gradient-aurora);
-  box-shadow: var(--glow-violet);
+.shell__icon {
+  display: block;
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 0 0.5rem rgba(124, 92, 196, 0.55));
   animation: glow-pulse 3.2s ease-in-out infinite;
 }
 

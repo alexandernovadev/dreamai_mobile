@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development"
   },
   "private": true,
-  "packageManager": "npm@10.9.8",
+  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
