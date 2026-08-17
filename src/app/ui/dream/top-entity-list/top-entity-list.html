@@ -1,0 +1,14 @@
+<div class="top-list card card--solid">
+  <h3 class="top-list__title">{{ title() }}</h3>
+  @if (rows().length === 0) {
+    <p class="top-list__empty">Sin datos aún.</p>
+  } @else {
+    @for (r of rows(); track r.id; let i = $index; let last = $last) {
+      <div class="top-list__row" [class.top-list__row--border]="!last">
+        <span class="top-list__rank">{{ i + 1 }}</span>
+        <span class="top-list__name">{{ r.name }}</span>
+        <span class="top-list__count">{{ r.count }}×</span>
+      </div>
+    }
+  }
+</div>

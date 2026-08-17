@@ -1,0 +1,21 @@
+<header class="page-header">
+  @if (showBack()) {
+    <button
+      type="button"
+      class="page-header__back"
+      aria-label="Volver"
+      (click)="back.emit()"
+    >
+      ←
+    </button>
+  }
+  <div class="page-header__titles">
+    <h1 class="page-header__title">{{ title() }}</h1>
+    @if (subtitle()) {
+      <p class="page-header__subtitle">{{ subtitle() }}</p>
+    }
+  </div>
+  <div class="page-header__actions">
+    <ng-content select="[actions]" />
+  </div>
+</header>

@@ -1,0 +1,19 @@
+<label class="field">
+  @if (label()) {
+    <span class="field__label">{{ label() }}</span>
+  }
+  <input
+    class="field__control"
+    [class.field__control--error]="!!error()"
+    [type]="type()"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    [value]="value()"
+    (input)="onInput($event)"
+  />
+  @if (error()) {
+    <span class="field__msg field__msg--error">{{ error() }}</span>
+  } @else if (hint()) {
+    <span class="field__msg">{{ hint() }}</span>
+  }
+</label>

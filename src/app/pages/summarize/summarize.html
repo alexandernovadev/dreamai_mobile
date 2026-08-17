@@ -1,0 +1,52 @@
+<div class="summarize">
+  <section class="summarize__section">
+    <span class="summarize__label">Criterio</span>
+    <div class="component-row">
+      <app-radio label="Por cantidad" [selected]="mode() === 'limit'" (select)="setMode('limit')" />
+      <app-radio label="Por fechas" [selected]="mode() === 'dates'" (select)="setMode('dates')" />
+    </div>
+  </section>
+
+  @if (mode() === 'limit') {
+    <section class="summarize__section">
+      <app-select
+        label="Sueños a incluir"
+        placeholder="Cantidad"
+        [options]="limitOptions"
+        [(value)]="limitChoice"
+      />
+    </section>
+  } @else {
+    <section class="summarize__section">
+      <div class="field-grid">
+        <app-date-field label="Desde" [(value)]="dateFrom" />
+        <app-date-field label="Hasta" [(value)]="dateTo" />
+      </div>
+    </section>
+  }
+
+  @if (error()) {
+    <p class="summarize__error">{{ error() }}</p>
+  }
+
+  <app-button variant="primary" [loading]="loading()" (pressed)="generate()">
+    Generar resumen
+  </app-button>
+
+  @if (result(); as r) {
+    <p class="summarize__meta">
+      <strong>{{ r.count }}</strong> sueño(s) en el criterio ·
+      <strong>{{ r.withNarrativeCount }}</strong> con narrativa
+      @if (r.capped) {
+        <span class="summarize__meta-muted"> (recortado a los más recientes)</span>
+      }
+    </p>
+    <article class="card card--solid summarize__result">
+      <app-markdown-renderer [content]="r.summary" />
+    </article>
+  } @else if (!loading()) {
+    <p class="summarize__empty">
+      Elegí un criterio y generá un resumen de patrones en tus sueños recientes.
+    </p>
+  }
+</div>

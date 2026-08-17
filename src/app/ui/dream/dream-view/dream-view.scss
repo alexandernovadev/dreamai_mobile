@@ -1,0 +1,125 @@
+@use 'breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+// "Watch page" shape: wide main content on the left, a narrower metadata/
+// elements rail on the right that sticks while the main column scrolls —
+// same idea as a video player + related-content sidebar, not a single
+// centered stack.
+.dream-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2xl);
+
+  @include bp.respond(lg) {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.dream-view__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  min-width: 0;
+}
+
+.dream-view__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+
+  @include bp.respond(lg) {
+    position: sticky;
+    top: calc(3.75rem + var(--space-lg));
+  }
+}
+
+.dream-view__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dream-view__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.dream-view__date {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.dream-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.dream-view__section-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.dream-view__narrative {
+  // Full-width sections (hero image, entity grid) use all the room the page
+  // gives them — only the actual reading text caps at a comfortable measure,
+  // same reasoning as capping DreamEditor's text fields.
+  max-width: 65ch;
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.dream-view__entity-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dream-view__entity-group-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.entity-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.dream-view__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.dream-view__lucidity {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+
+  @include bp.respond(md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

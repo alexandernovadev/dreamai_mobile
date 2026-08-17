@@ -1,0 +1,18 @@
+<div class="histogram card card--solid">
+  <h3 class="histogram__title">Lucidez en sueños (0–10)</h3>
+  @if (!hasAny()) {
+    <p class="histogram__empty">Aún no hay sueños con lucidez registrada.</p>
+  } @else {
+    <div class="histogram__row">
+      @for (b of bins(); track b.level) {
+        <div class="histogram__col">
+          <div class="histogram__track">
+            <div class="histogram__bar" [style.height.px]="heightOf(b.count)"></div>
+          </div>
+          <span class="histogram__level">{{ b.level }}</span>
+          <span class="histogram__count">{{ b.count }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>

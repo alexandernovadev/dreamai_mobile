@@ -1,0 +1,38 @@
+<div class="pager" tabindex="0" (keydown)="onKeydown($event)">
+  <div class="pager__viewport">
+    <div class="pager__track" [style.transform]="'translateX(-' + index() * 100 + '%)'">
+      @for (item of items(); track $index; let i = $index) {
+        <div class="pager__page" [attr.aria-hidden]="i !== index()">
+          <ng-container
+            [ngTemplateOutlet]="itemTemplate()"
+            [ngTemplateOutletContext]="templateContext(item, i)"
+          />
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (total() > 1) {
+    <div class="pager__controls">
+      <button
+        type="button"
+        class="pager__nav"
+        aria-label="Anterior"
+        [disabled]="isFirst()"
+        (click)="goPrev()"
+      >
+        ‹
+      </button>
+      <span class="pager__count">{{ index() + 1 }} / {{ total() }}</span>
+      <button
+        type="button"
+        class="pager__nav"
+        aria-label="Siguiente"
+        [disabled]="isLast()"
+        (click)="goNext()"
+      >
+        ›
+      </button>
+    </div>
+  }
+</div>

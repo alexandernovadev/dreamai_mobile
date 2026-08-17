@@ -1,0 +1,58 @@
+<div class="upload-field">
+  @if (label()) {
+    <span class="upload-field__label">{{ label() }}</span>
+  }
+
+  <div
+    class="dropzone"
+    [class.dropzone--dragging]="isDragging()"
+    [class.dropzone--disabled]="disabled()"
+    [class.dropzone--has-image]="!!displayUrl()"
+    role="button"
+    tabindex="0"
+    aria-label="Subir imagen"
+    (click)="onDropzoneClick(fileInput)"
+    (keydown.enter)="onDropzoneClick(fileInput)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      class="dropzone__input"
+      [disabled]="disabled() || loading()"
+      (change)="onFileInputChange($event)"
+    />
+
+    @if (displayUrl()) {
+      <img class="dropzone__preview" [src]="displayUrl()" alt="" />
+      @if (!loading()) {
+        <button
+          type="button"
+          class="dropzone__remove"
+          aria-label="Quitar imagen"
+          (click)="onRemove($event)"
+        >
+          &times;
+        </button>
+      }
+    } @else {
+      <div class="dropzone__placeholder">
+        <span class="dropzone__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 16.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5M12 3v12m0-12 4 4m-4-4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="dropzone__text">Arrastrá una imagen o hacé clic para elegir</span>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="dropzone__overlay">
+        <span class="dropzone__spinner" aria-hidden="true"></span>
+      </div>
+    }
+  </div>
+</div>

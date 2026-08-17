@@ -1,0 +1,27 @@
+// Mobile-first breakpoints. Base styles = phone; `respond()` layers up from there.
+$bp-sm: 480px; // large phones
+$bp-md: 768px; // tablets
+$bp-lg: 1024px; // small desktop / laptop
+$bp-xl: 1280px; // desktop
+$bp-2xl: 1536px; // large desktop
+
+$breakpoints: (
+  sm: $bp-sm,
+  md: $bp-md,
+  lg: $bp-lg,
+  xl: $bp-xl,
+  2xl: $bp-2xl,
+);
+
+/// Mobile-first media query. Usage: @include respond(md) { ... }
+@mixin respond($name) {
+  $value: map-get($breakpoints, $name);
+
+  @if $value == null {
+    @error "Unknown breakpoint `#{$name}`. Use one of: #{map-keys($breakpoints)}";
+  }
+
+  @media (min-width: $value) {
+    @content;
+  }
+}

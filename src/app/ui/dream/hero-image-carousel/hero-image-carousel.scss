@@ -1,0 +1,88 @@
+:host {
+  display: block;
+}
+
+.hero-carousel {
+  position: relative;
+  width: 100%;
+  // aspect-ratio alone made this balloon in height on wide desktop
+  // containers (full-width × 16:10 got very tall) — max-height caps it
+  // regardless of how wide the container is; object-fit:cover on the image
+  // keeps the crop looking intentional instead of letterboxed.
+  aspect-ratio: 21 / 9;
+  max-height: 24rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.hero-carousel__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.03);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform 1.2s var(--ease-out);
+}
+
+.hero-carousel__image--active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hero-carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+  color: var(--text);
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+
+  &:hover {
+    background: var(--gradient-aurora-soft);
+  }
+}
+
+.hero-carousel__nav--prev {
+  left: var(--space-sm);
+}
+
+.hero-carousel__nav--next {
+  right: var(--space-sm);
+}
+
+.hero-carousel__dots {
+  position: absolute;
+  bottom: var(--space-sm);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.hero-carousel__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.hero-carousel__dot--active {
+  background: var(--text);
+  transform: scale(1.3);
+}

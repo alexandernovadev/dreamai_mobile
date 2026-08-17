@@ -1,0 +1,44 @@
+<article
+  class="dream-card"
+  role="button"
+  tabindex="0"
+  (click)="view.emit()"
+  (keydown)="onKeydown($event)"
+>
+  <div class="dream-card__media">
+    @if (coverUrl()) {
+      <img class="dream-card__image" [src]="coverUrl()" alt="" />
+    } @else {
+      <div class="dream-card__fallback" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    }
+    <div class="dream-card__badge">
+      <app-status-badge [status]="status()" />
+    </div>
+  </div>
+
+  <div class="dream-card__body">
+    <p class="dream-card__snippet">{{ snippet() }}</p>
+    <div class="dream-card__meta">
+      <span class="dream-card__date">{{ date() }}</span>
+      <button
+        type="button"
+        class="dream-card__edit"
+        aria-label="Editar sueño"
+        (click)="onEditClick($event)"
+      >
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9" stroke-linecap="round" />
+          <path
+            d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</article>

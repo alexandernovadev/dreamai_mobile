@@ -1,0 +1,168 @@
+@use 'breakpoints' as bp;
+
+// YouTube-shaped app chrome: a slim persistent top bar (brand + primary CTA)
+// and a nav rail — a horizontal strip on mobile, a sticky vertical sidebar on
+// desktop. Nothing below this owns its own "centered app screen" width; the
+// content area gets whatever's left after the sidebar, full-bleed.
+
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.shell__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+
+  @include bp.respond(md) {
+    padding: var(--space-md) var(--space-xl);
+  }
+}
+
+.shell__back {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text);
+  margin-left: -0.4rem;
+
+  &:hover {
+    background: var(--surface-muted);
+  }
+}
+
+.shell__brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shell__dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--gradient-aurora);
+  box-shadow: var(--glow-violet);
+  animation: glow-pulse 3.2s ease-in-out infinite;
+}
+
+.shell__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.shell__title {
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell__subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell__topbar-spacer {
+  flex: 1;
+}
+
+.shell__cta {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  padding: 0.55rem 1.1rem;
+}
+
+.shell__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  @include bp.respond(lg) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.shell__sidebar {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-lg);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+
+  @include bp.respond(lg) {
+    flex-direction: column;
+    width: 14rem;
+    padding: var(--space-lg) var(--space-md);
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 3.75rem;
+    height: calc(100dvh - 3.75rem);
+    overflow-x: visible;
+  }
+}
+
+.shell__nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    color: var(--text);
+    background: var(--surface-muted);
+  }
+}
+
+.shell__nav-item--active {
+  color: var(--text);
+  background: var(--gradient-aurora-soft);
+}
+
+.shell__nav-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.shell__main {
+  flex: 1;
+  min-width: 0;
+}

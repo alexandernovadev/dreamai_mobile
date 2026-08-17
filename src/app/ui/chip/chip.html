@@ -1,0 +1,13 @@
+<span class="chip" [class]="toneClass()" [class.chip--selected]="selected()">
+  <span class="chip__label"><ng-content /></span>
+  @if (removable()) {
+    <button
+      type="button"
+      class="chip__remove"
+      aria-label="Quitar"
+      (click)="remove.emit()"
+    >
+      &times;
+    </button>
+  }
+</span>

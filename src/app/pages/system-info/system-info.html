@@ -1,0 +1,67 @@
+<div class="system-info">
+  <article class="card card--solid system-info__card">
+    <div class="system-info__row">
+      <span class="system-info__label">Aplicación</span>
+      <span class="system-info__value">{{ appName }}</span>
+    </div>
+    <div class="system-info__row">
+      <span class="system-info__label">Modo</span>
+      <span class="system-info__value">{{ buildMode }}</span>
+    </div>
+    <div class="system-info__row">
+      <span class="system-info__label">API</span>
+      <span class="system-info__value system-info__value--mono">{{ apiBaseUrl }}</span>
+    </div>
+    <div class="system-info__row">
+      <span class="system-info__label">Conexión</span>
+      <span
+        class="system-info__pill"
+        [class.system-info__pill--connected]="connectionStatus() === 'connected'"
+        [class.system-info__pill--disconnected]="connectionStatus() === 'disconnected'"
+      >
+        @switch (connectionStatus()) {
+          @case ('checking') {
+            Verificando…
+          }
+          @case ('connected') {
+            Conectado
+          }
+          @case ('disconnected') {
+            Sin conexión
+          }
+        }
+      </span>
+    </div>
+  </article>
+
+  @if (backendMeta(); as meta) {
+    <article class="card card--solid system-info__card">
+      <div class="system-info__row">
+        <span class="system-info__label">Servicio</span>
+        <span class="system-info__value">{{ meta.serviceName }}</span>
+      </div>
+      <div class="system-info__row">
+        <span class="system-info__label">Versión</span>
+        <span class="system-info__value system-info__value--mono">{{ meta.version }}</span>
+      </div>
+      <div class="system-info__row">
+        <span class="system-info__label">Entorno</span>
+        <span class="system-info__value">{{ meta.environment }}</span>
+      </div>
+      <div class="system-info__row">
+        <span class="system-info__label">Build</span>
+        <span class="system-info__value">{{ meta.buildAt | date: 'medium' }}</span>
+      </div>
+      @if (meta.commit) {
+        <div class="system-info__row">
+          <span class="system-info__label">Commit</span>
+          <span class="system-info__value system-info__value--mono">{{ meta.commit }}</span>
+        </div>
+      }
+    </article>
+  }
+
+  <button type="button" class="btn btn--ghost system-info__retry" (click)="checkConnection()">
+    Volver a verificar
+  </button>
+</div>

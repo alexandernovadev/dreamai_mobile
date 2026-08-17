@@ -1,0 +1,30 @@
+// Global entry point — design tokens, reset, and ambient motion utilities.
+// Dark-only. See src/styles/ for the full token set.
+
+@use 'styles/tokens';
+@use 'styles/reset';
+@use 'styles/animations';
+@use 'styles/buttons';
+@use 'styles/cards';
+@use 'styles/fields';
+
+// Ambient aurora background — three soft, slowly drifting radial glows behind
+// everything. Fixed so it doesn't repeat per page/scroll; very low cost (no
+// layout, no JS, GPU-composited transform only).
+body {
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10vh -10vw;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 30rem at 12% 8%, rgba(124, 92, 196, 0.28), transparent 60%),
+    radial-gradient(34rem 28rem at 88% 22%, rgba(196, 92, 174, 0.2), transparent 60%),
+    radial-gradient(42rem 34rem at 50% 100%, rgba(92, 140, 240, 0.18), transparent 60%);
+  animation: aurora-drift 24s ease-in-out infinite alternate;
+  background-size: 160% 160%;
+}

@@ -1,0 +1,25 @@
+:host {
+  display: block;
+  width: 100%;
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+  padding-bottom: var(--space-3xl);
+}
+
+.view-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-md);
+}
+
+app-dream-view {
+  display: block;
+  // No hard cap here — the hero image, entity grid, and chips are free to
+  // use the full padded width. DreamView itself only caps the *text*
+  // (narrative/reflection paragraphs) at a readable measure.
+  max-width: 80rem;
+  margin: 0 auto;
+}

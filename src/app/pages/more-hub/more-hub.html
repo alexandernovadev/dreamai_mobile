@@ -1,0 +1,62 @@
+<div class="more-hub">
+  <h2 class="more-hub__section-title">Herramientas</h2>
+
+  <div class="more-hub__list">
+    @for (row of rows; track row.path) {
+      <a class="more-row" [routerLink]="row.path">
+        <span class="more-row__icon">
+          @switch (row.icon) {
+            @case ('info') {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5.5M12 8v.01" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            }
+            @case ('bell') {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path
+                  d="M6 9.5a6 6 0 1 1 12 0v4.5l1.5 3h-15l1.5-3V9.5Z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke-linecap="round" />
+              </svg>
+            }
+            @case ('totem') {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path
+                  d="M12 3 15 8 12 10 9 8 12 3Z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M12 10v11M8 14h8M9 21h6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            }
+            @case ('audio') {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path
+                  d="M9 8v8M6 10.5v3M12 5.5v13M15 9.5v5M18 11v2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            }
+          }
+        </span>
+        <span class="more-row__body">
+          <span class="more-row__label">{{ row.label }}</span>
+          <span class="more-row__desc">{{ row.description }}</span>
+        </span>
+        <span class="more-row__chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </a>
+    }
+  </div>
+</div>

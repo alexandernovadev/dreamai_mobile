@@ -1,0 +1,13 @@
+<button type="button" class="entity-card" [class]="toneClass()" (click)="select.emit()">
+  <span class="entity-card__avatar">
+    @if (imageUrl()) {
+      <img class="entity-card__image" [src]="imageUrl()" alt="" />
+    } @else {
+      <span class="entity-card__initials">{{ initials() }}</span>
+    }
+  </span>
+  <span class="entity-card__title">{{ title() }}</span>
+  @if (appearanceCount() !== null) {
+    <span class="entity-card__count">{{ appearanceCount() }}×</span>
+  }
+</button>

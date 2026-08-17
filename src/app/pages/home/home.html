@@ -1,0 +1,32 @@
+<div class="home">
+  <app-async-state
+    [loading]="loading()"
+    loadingText="Cargando sueños…"
+    [error]="error()"
+    (retry)="load()"
+  />
+
+  @if (!loading() && !error()) {
+    @if (dreams().length === 0) {
+      <div class="home__empty">
+        <p class="home__empty-title">Todavía no hay sueños</p>
+        <p class="home__empty-desc">
+          Registrá tu primer sueño con el botón de arriba.
+        </p>
+      </div>
+    } @else {
+      <div class="home__grid">
+        @for (dream of dreams(); track dream.id) {
+          <app-dream-card
+            [date]="dreamDateLabel(dream)"
+            [status]="dream.status"
+            [snippet]="dreamSnippet(dream.rawNarrative)"
+            [coverUrl]="dream.dreamImages[0] ?? null"
+            (view)="goView(dream.id)"
+            (edit)="goEdit(dream.id)"
+          />
+        }
+      </div>
+    }
+  }
+</div>

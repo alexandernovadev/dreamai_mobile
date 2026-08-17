@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.signals-entity-edit {
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-3xl);
+  max-width: 40rem;
+}
+
+.signals-entity-edit__danger-zone {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}

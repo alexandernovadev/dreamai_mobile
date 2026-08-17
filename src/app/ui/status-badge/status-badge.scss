@@ -1,0 +1,39 @@
+:host {
+  display: inline-flex;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-badge--draft {
+  background: var(--status-draft-bg);
+  border-color: var(--status-draft-border);
+  color: var(--status-draft-text);
+}
+
+.status-badge--elements {
+  background: var(--status-elements-bg);
+  border-color: var(--status-elements-border);
+  color: var(--status-elements-text);
+}
+
+.status-badge--structured {
+  background: var(--status-structured-bg);
+  border-color: var(--status-structured-border);
+  color: var(--status-structured-text);
+}
+
+.status-badge--thought {
+  background: var(--status-thought-bg);
+  border-color: var(--status-thought-border);
+  color: var(--status-thought-text);
+}

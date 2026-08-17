@@ -1,0 +1,71 @@
+@use 'breakpoints' as bp;
+
+:host {
+  display: block;
+  width: 100%;
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+  padding-bottom: var(--space-3xl);
+}
+
+.summarize {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: 42rem;
+  margin-inline: auto;
+  padding-top: var(--space-lg);
+}
+
+.summarize__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.summarize__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.component-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+
+  @include bp.respond(sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.summarize__error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.summarize__meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.summarize__meta-muted {
+  color: var(--text-muted);
+}
+
+.summarize__result {
+  padding: var(--space-lg);
+}
+
+.summarize__empty {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-xl) 0;
+}

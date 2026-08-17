@@ -1,0 +1,16 @@
+<label class="switch-row" [class.switch-row--disabled]="disabled()">
+  <button
+    type="button"
+    role="switch"
+    class="switch"
+    [class.switch--on]="checked()"
+    [attr.aria-checked]="checked()"
+    [disabled]="disabled()"
+    (click)="toggle()"
+  >
+    <span class="switch__thumb"></span>
+  </button>
+  @if (label()) {
+    <span class="switch-row__label">{{ label() }}</span>
+  }
+</label>

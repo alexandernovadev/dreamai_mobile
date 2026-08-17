@@ -1,0 +1,13 @@
+@if (loading()) {
+  <div class="async-state" role="status" aria-live="polite">
+    <span class="async-state__spinner" aria-hidden="true"></span>
+    <p class="async-state__text">{{ loadingText() }}</p>
+  </div>
+} @else if (error()) {
+  <div class="async-state" role="alert" aria-live="assertive">
+    <p class="async-state__text async-state__text--error">{{ error() }}</p>
+    <app-button variant="ghost" (pressed)="retry.emit()">
+      {{ retryLabel() }}
+    </app-button>
+  </div>
+}

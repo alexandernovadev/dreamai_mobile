@@ -1,0 +1,106 @@
+// Global button primitives — reused across every screen.
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    filter var(--duration-base) var(--ease-out);
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+.btn--primary {
+  color: var(--text);
+  background: var(--gradient-aurora-vivid);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
+  box-shadow: var(--glow-violet);
+
+  &:hover {
+    background-position: 100% 50%;
+    filter: brightness(1.08);
+    box-shadow: var(--glow-magenta);
+  }
+}
+
+.btn--ghost {
+  color: var(--text-secondary);
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+}
+
+.btn--outline {
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+
+  &:hover {
+    background: var(--gradient-aurora-soft);
+    border-color: var(--violet-soft);
+  }
+}
+
+.btn--danger {
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    border-color: var(--danger);
+  }
+}
+
+.btn--loading {
+  position: relative;
+}
+
+// Spinner sits absolutely centered over the button so the label can stay in
+// flow (just invisible) — the button never changes width when it starts/stops
+// loading, which is what keeps a loading toggle from feeling janky.
+.btn__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: currentColor;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+.btn__label--hidden {
+  visibility: hidden;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

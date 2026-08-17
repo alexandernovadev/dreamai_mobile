@@ -1,0 +1,14 @@
+<button
+  type="button"
+  role="radio"
+  class="radio-row"
+  [class.radio-row--disabled]="disabled()"
+  [attr.aria-checked]="selected()"
+  [disabled]="disabled()"
+  (click)="onClick()"
+>
+  <span class="radio" [class.radio--selected]="selected()">
+    <span class="radio__dot"></span>
+  </span>
+  <span class="radio-row__label">{{ label() }}</span>
+</button>

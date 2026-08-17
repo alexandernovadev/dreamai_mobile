@@ -1,0 +1,17 @@
+<div class="view-actions">
+  <app-button variant="ghost" (pressed)="goEdit()">Editar</app-button>
+  <app-button variant="danger" [loading]="deleting()" (pressed)="deleteDream()">
+    Eliminar
+  </app-button>
+</div>
+
+<app-async-state
+  [loading]="loading()"
+  loadingText="Cargando sueño…"
+  [error]="error()"
+  (retry)="load()"
+/>
+
+@if (!loading() && !error() && data(); as d) {
+  <app-dream-view [session]="d.session" [hydrated]="d.hydrated" />
+}

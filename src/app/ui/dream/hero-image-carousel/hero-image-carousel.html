@@ -1,0 +1,42 @@
+<div class="hero-carousel">
+  @for (src of images(); track src; let i = $index) {
+    <img
+      class="hero-carousel__image"
+      [class.hero-carousel__image--active]="i === index()"
+      [src]="src"
+      [attr.aria-hidden]="i !== index()"
+      alt=""
+    />
+  }
+
+  @if (hasMultiple()) {
+    <button
+      type="button"
+      class="hero-carousel__nav hero-carousel__nav--prev"
+      aria-label="Imagen anterior"
+      (click)="goPrev()"
+    >
+      ‹
+    </button>
+    <button
+      type="button"
+      class="hero-carousel__nav hero-carousel__nav--next"
+      aria-label="Imagen siguiente"
+      (click)="goNext()"
+    >
+      ›
+    </button>
+
+    <div class="hero-carousel__dots">
+      @for (src of images(); track src; let i = $index) {
+        <button
+          type="button"
+          class="hero-carousel__dot"
+          [class.hero-carousel__dot--active]="i === index()"
+          [attr.aria-label]="'Ir a la imagen ' + (i + 1)"
+          (click)="goTo(i)"
+        ></button>
+      }
+    </div>
+  }
+</div>

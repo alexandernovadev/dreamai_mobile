@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.signals-list {
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-3xl);
+}
+
+.signals-list__empty {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  padding: var(--space-2xl) 0;
+}
+
+.signals-list__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+}
+
+.signals-list__load-more {
+  display: block;
+  margin: var(--space-2xl) auto 0;
+}

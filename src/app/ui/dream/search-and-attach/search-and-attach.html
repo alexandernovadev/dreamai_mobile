@@ -1,0 +1,41 @@
+<div class="search-attach">
+  <app-input [label]="label()" [placeholder]="placeholder()" [(value)]="query" />
+
+  @if (showDropdown()) {
+    <div class="search-attach__dropdown card card--glass">
+      @if (suggestions().length > 0) {
+        <ul class="search-attach__list">
+          @for (s of suggestions(); track s.id) {
+            <li>
+              <button
+                type="button"
+                class="search-attach__option"
+                (click)="onSuggestionClick(s.id)"
+              >
+                {{ s.label }}
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="search-attach__empty">Sin coincidencias.</p>
+      }
+
+      @if (creatable()) {
+        <button type="button" class="search-attach__create" (click)="onCreateNew()">
+          + Crear "{{ trimmedQuery() }}"
+        </button>
+      }
+    </div>
+  }
+
+  @if (attached().length > 0) {
+    <div class="search-attach__chips">
+      @for (a of attached(); track a.id) {
+        <app-chip [tone]="entityType()" [removable]="true" (remove)="detachItem.emit(a.id)">
+          {{ a.label }}
+        </app-chip>
+      }
+    </div>
+  }
+</div>

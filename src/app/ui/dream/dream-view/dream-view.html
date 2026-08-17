@@ -1,0 +1,90 @@
+<article class="dream-view">
+  <div class="dream-view__main">
+    @if (session().dreamImages.length > 0) {
+      <app-hero-image-carousel [images]="session().dreamImages" />
+    }
+
+    <header class="dream-view__header">
+      <div class="dream-view__meta">
+        <span class="dream-view__date">{{ dateLabel() }}</span>
+        <app-status-badge [status]="session().status" />
+      </div>
+      @if (session().dreamKind.length > 0) {
+        <div class="chip-row">
+          @for (k of session().dreamKind; track k) {
+            <app-chip>{{ dreamKindLabelOf(k) }}</app-chip>
+          }
+        </div>
+      }
+    </header>
+
+    <section class="dream-view__section">
+      <h2 class="dream-view__section-title">Narrativa</h2>
+      <p class="dream-view__narrative">
+        {{ session().rawNarrative.trim() || 'Sin narrativa todavía.' }}
+      </p>
+    </section>
+
+    @if (hasReflection()) {
+      <section class="dream-view__section">
+        <h2 class="dream-view__section-title">Reflexión</h2>
+        <div class="card-grid">
+          @if (session().userThought?.trim()) {
+            <article class="card card--solid">
+              <h3 class="card__title">Tu reflexión</h3>
+              <p class="dream-view__narrative">{{ session().userThought }}</p>
+            </article>
+          }
+          @if (session().aiSummarize?.trim()) {
+            <article class="card card--solid">
+              <h3 class="card__title">Lectura de IA</h3>
+              <app-markdown-renderer [content]="session().aiSummarize!" />
+            </article>
+          }
+        </div>
+      </section>
+    }
+  </div>
+
+  <aside class="dream-view__side">
+    @if (hasEntities()) {
+      <section class="dream-view__section">
+        <h2 class="dream-view__section-title">Elementos</h2>
+        @for (group of entityGroups(); track group.kind) {
+          <div class="dream-view__entity-group">
+            <span class="dream-view__entity-group-title">{{ entityLabel[group.kind] }}</span>
+            <div class="entity-row">
+              @for (item of group.items; track item.id) {
+                <app-entity-card
+                  [entityType]="group.kind"
+                  [title]="item.label"
+                  [imageUrl]="item.imageUrl"
+                />
+              }
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    @if (hasPerspectiveOrLucidity()) {
+      <section class="dream-view__section">
+        <h2 class="dream-view__section-title">Perspectiva y lucidez</h2>
+        <div class="dream-view__row">
+          @if (session().analysis?.perspectives?.length) {
+            <div class="chip-row">
+              @for (p of session().analysis!.perspectives!; track p) {
+                <app-chip>{{ perspectiveLabel[p] }}</app-chip>
+              }
+            </div>
+          }
+          @if (session().analysis?.lucidityLevel != null) {
+            <span class="dream-view__lucidity">
+              Lucidez: <strong>{{ session().analysis!.lucidityLevel }}/10</strong>
+            </span>
+          }
+        </div>
+      </section>
+    }
+  </aside>
+</article>

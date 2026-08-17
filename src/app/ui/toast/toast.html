@@ -1,0 +1,19 @@
+<div class="toast" [class]="'toast--' + tone()" role="status">
+  <span class="toast__icon" aria-hidden="true">
+    @switch (tone()) {
+      @case ('success') {
+        ✓
+      }
+      @case ('danger') {
+        !
+      }
+      @default {
+        i
+      }
+    }
+  </span>
+  <span class="toast__message">{{ message() }}</span>
+  <button type="button" class="toast__close" aria-label="Cerrar" (click)="dismiss.emit()">
+    &times;
+  </button>
+</div>

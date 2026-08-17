@@ -1,0 +1,43 @@
+<div class="select" #root>
+  @if (label()) {
+    <span class="select__label">{{ label() }}</span>
+  }
+
+  <button
+    type="button"
+    class="select__trigger"
+    [class.select__trigger--open]="open()"
+    [disabled]="disabled()"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="listbox"
+    (click)="toggle()"
+    (keydown)="onKeydown($event)"
+  >
+    <span
+      class="select__value"
+      [class.select__value--placeholder]="!selectedOption()"
+    >
+      {{ selectedOption()?.label ?? placeholder() }}
+    </span>
+    <span class="select__chevron" aria-hidden="true">▾</span>
+  </button>
+
+  @if (open()) {
+    <ul class="select__panel card card--glass" role="listbox">
+      @for (opt of options(); track opt.value) {
+        <li>
+          <button
+            type="button"
+            role="option"
+            class="select__option"
+            [class.select__option--selected]="opt.value === value()"
+            [attr.aria-selected]="opt.value === value()"
+            (click)="selectOption(opt)"
+          >
+            {{ opt.label }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

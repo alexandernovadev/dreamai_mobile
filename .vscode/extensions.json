@@ -1,1 +1,4 @@
-{ "recommendations": ["expo.vscode-expo-tools"] }
+{
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
+  "recommendations": ["angular.ng-template"]
+}

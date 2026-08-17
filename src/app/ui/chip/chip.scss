@@ -1,0 +1,84 @@
+:host {
+  display: inline-flex;
+}
+
+.chip {
+  --chip-color: var(--text-secondary);
+  --chip-bg: var(--surface-muted);
+  --chip-border: var(--border);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-color);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.chip--selected {
+  filter: brightness(1.15) saturate(1.2);
+  box-shadow:
+    0 0 0 1px var(--chip-border),
+    0 0 16px var(--chip-bg);
+}
+
+.chip--characters {
+  --chip-color: var(--entity-characters-color);
+  --chip-bg: var(--entity-characters-bg);
+  --chip-border: var(--entity-characters-border);
+}
+
+.chip--locations {
+  --chip-color: var(--entity-locations-color);
+  --chip-bg: var(--entity-locations-bg);
+  --chip-border: var(--entity-locations-border);
+}
+
+.chip--objects {
+  --chip-color: var(--entity-objects-color);
+  --chip-bg: var(--entity-objects-bg);
+  --chip-border: var(--entity-objects-border);
+}
+
+.chip--events {
+  --chip-color: var(--entity-events-color);
+  --chip-bg: var(--entity-events-bg);
+  --chip-border: var(--entity-events-border);
+}
+
+.chip--life-context {
+  --chip-color: var(--entity-life-context-color);
+  --chip-bg: var(--entity-life-context-bg);
+  --chip-border: var(--entity-life-context-border);
+}
+
+.chip--feelings {
+  --chip-color: var(--entity-feelings-color);
+  --chip-bg: var(--entity-feelings-bg);
+  --chip-border: var(--entity-feelings-border);
+}
+
+.chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.7;
+  line-height: 1;
+  font-size: 0.9rem;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}

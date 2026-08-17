@@ -1,0 +1,32 @@
+<div class="dream-stats">
+  <app-async-state
+    [loading]="loading()"
+    loadingText="Cargando estadísticas…"
+    [error]="error()"
+    (retry)="load()"
+  />
+
+  @if (!loading() && !error() && overview(); as o) {
+    <div class="dream-stats__headline card card--solid">
+      <span class="dream-stats__headline-count">{{ o.dreamCount }}</span>
+      <span class="dream-stats__headline-label">sueños registrados</span>
+    </div>
+
+    <div class="dream-stats__totals">
+      @for (row of catalogRows(); track row.label) {
+        <div class="dream-stats__total card card--solid">
+          <span class="dream-stats__total-count">{{ row.count }}</span>
+          <span class="dream-stats__total-label">{{ row.label }}</span>
+        </div>
+      }
+    </div>
+
+    <app-lucidity-histogram [bins]="o.lucidityHistogram" />
+
+    <div class="dream-stats__top-grid">
+      <app-top-entity-list title="Personajes recurrentes" [rows]="o.topCharacters" />
+      <app-top-entity-list title="Lugares recurrentes" [rows]="o.topLocations" />
+      <app-top-entity-list title="Objetos recurrentes" [rows]="o.topObjects" />
+    </div>
+  }
+</div>

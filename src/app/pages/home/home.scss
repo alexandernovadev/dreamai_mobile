@@ -1,0 +1,38 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Side padding scales with viewport instead of capping the content column —
+// on a wide monitor this stays roomy at the edges while the grid below is
+// free to actually use the freed-up width (fluid columns, not a fixed cap).
+.home {
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+  padding-bottom: var(--space-3xl);
+}
+
+.home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: var(--space-lg);
+}
+
+.home__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-3xl) var(--space-lg);
+  text-align: center;
+}
+
+.home__empty-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.home__empty-desc {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  max-width: 24rem;
+}

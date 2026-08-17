@@ -1,0 +1,46 @@
+:host {
+  display: inline-flex;
+}
+
+.radio-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.radio-row--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio {
+  position: relative;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.radio--selected {
+  border-color: var(--violet-soft);
+}
+
+.radio__dot {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--gradient-aurora);
+  transform: scale(0);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.radio--selected .radio__dot {
+  transform: scale(1);
+}
+
+.radio-row__label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}

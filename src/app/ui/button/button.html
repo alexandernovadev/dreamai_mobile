@@ -1,0 +1,18 @@
+<button
+  class="btn"
+  [class.btn--primary]="variant() === 'primary'"
+  [class.btn--ghost]="variant() === 'ghost'"
+  [class.btn--outline]="variant() === 'outline'"
+  [class.btn--danger]="variant() === 'danger'"
+  [class.btn--loading]="loading()"
+  [type]="type()"
+  [disabled]="disabled() || loading()"
+  (click)="onClick()"
+>
+  @if (loading()) {
+    <span class="btn__spinner" aria-hidden="true"></span>
+  }
+  <span class="btn__label" [class.btn__label--hidden]="loading()">
+    <ng-content />
+  </span>
+</button>

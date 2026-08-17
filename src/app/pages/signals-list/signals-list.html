@@ -1,0 +1,37 @@
+<div class="signals-list">
+  <app-async-state
+    [loading]="loading()"
+    loadingText="Cargando…"
+    [error]="error()"
+    (retry)="load()"
+  />
+
+  @if (!loading() && !error()) {
+    @if (rows().length === 0) {
+      <p class="signals-list__empty">Sin registros todavía.</p>
+    } @else {
+      <div class="signals-list__grid">
+        @for (row of rows(); track row.id) {
+          <app-entity-card
+            [entityType]="kind()"
+            [title]="row.title"
+            [imageUrl]="row.imageUrl"
+            [appearanceCount]="row.appearanceCount"
+            (select)="goEntity(row.id)"
+          />
+        }
+      </div>
+
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--ghost signals-list__load-more"
+          [disabled]="loadingMore()"
+          (click)="loadMore()"
+        >
+          {{ loadingMore() ? 'Cargando…' : 'Cargar más' }}
+        </button>
+      }
+    }
+  }
+</div>

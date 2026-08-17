@@ -1,0 +1,18 @@
+<div class="slider-field">
+  @if (label()) {
+    <div class="slider-field__top">
+      <span class="slider-field__label">{{ label() }}</span>
+      <span class="slider-field__value">{{ value() }}</span>
+    </div>
+  }
+  <input
+    class="slider"
+    type="range"
+    [min]="min()"
+    [max]="max()"
+    [step]="step()"
+    [disabled]="disabled()"
+    [value]="value()"
+    (input)="onInput($event)"
+  />
+</div>

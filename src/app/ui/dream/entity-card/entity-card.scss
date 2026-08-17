@@ -1,0 +1,104 @@
+:host {
+  display: block;
+  width: 6.5rem;
+  flex-shrink: 0;
+}
+
+.entity-card {
+  --entity-color: var(--text-secondary);
+  --entity-bg: var(--surface-muted);
+  --entity-border: var(--border);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out);
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--entity-border);
+  }
+}
+
+.entity-card--characters {
+  --entity-color: var(--entity-characters-color);
+  --entity-bg: var(--entity-characters-bg);
+  --entity-border: var(--entity-characters-border);
+}
+
+.entity-card--locations {
+  --entity-color: var(--entity-locations-color);
+  --entity-bg: var(--entity-locations-bg);
+  --entity-border: var(--entity-locations-border);
+}
+
+.entity-card--objects {
+  --entity-color: var(--entity-objects-color);
+  --entity-bg: var(--entity-objects-bg);
+  --entity-border: var(--entity-objects-border);
+}
+
+.entity-card--events {
+  --entity-color: var(--entity-events-color);
+  --entity-bg: var(--entity-events-bg);
+  --entity-border: var(--entity-events-border);
+}
+
+.entity-card--life-context {
+  --entity-color: var(--entity-life-context-color);
+  --entity-bg: var(--entity-life-context-bg);
+  --entity-border: var(--entity-life-context-border);
+}
+
+.entity-card--feelings {
+  --entity-color: var(--entity-feelings-color);
+  --entity-bg: var(--entity-feelings-bg);
+  --entity-border: var(--entity-feelings-border);
+}
+
+.entity-card__avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--entity-bg);
+  border: 1px solid var(--entity-border);
+}
+
+.entity-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.entity-card__initials {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--entity-color);
+}
+
+.entity-card__title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.entity-card__count {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

@@ -1,0 +1,77 @@
+// Global surface/card primitives.
+
+.card {
+  position: relative;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card--solid {
+  background: var(--gradient-surface);
+  border: 1px solid var(--border);
+}
+
+.card--glass {
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.card__glow {
+  position: absolute;
+  inset: auto auto -40% -20%;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.card__glow--violet {
+  background: var(--violet);
+}
+
+.card__glow--magenta {
+  background: var(--magenta);
+}
+
+.card__glow--blue {
+  background: var(--blue);
+}
+
+.card--gradient-border {
+  background: var(--gradient-surface);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--gradient-aurora);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+.card__title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.card__desc {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.6;
+}

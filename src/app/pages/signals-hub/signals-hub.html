@@ -1,0 +1,34 @@
+<app-async-state
+  [loading]="loading()"
+  loadingText="Cargando…"
+  [error]="error()"
+  (retry)="load()"
+/>
+
+@if (!loading() && !error()) {
+  <div class="signals-hub">
+    @for (kind of kinds; track kind) {
+      <section class="signals-hub__section">
+        <div class="signals-hub__section-head">
+          <h2 class="signals-hub__section-title">{{ entityLabel[kind] }}</h2>
+          <a class="signals-hub__see-all" [routerLink]="['/signals', kind]">Ver todos →</a>
+        </div>
+        @if (rowsByKind()[kind].length === 0) {
+          <p class="signals-hub__empty">Sin registros todavía.</p>
+        } @else {
+          <div class="signals-hub__row">
+            @for (row of rowsByKind()[kind]; track row.id) {
+              <app-entity-card
+                [entityType]="kind"
+                [title]="row.title"
+                [imageUrl]="row.imageUrl"
+                [appearanceCount]="row.appearanceCount"
+                (select)="goEntity(kind, row.id)"
+              />
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+}

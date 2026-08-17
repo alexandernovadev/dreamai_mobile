@@ -1,0 +1,245 @@
+<div class="editor-status-row">
+  <app-status-badge [status]="status()" />
+  <span
+    class="save-chip"
+    [class.save-chip--saving]="saveState() === 'saving'"
+    [class.save-chip--error]="saveState() === 'error'"
+  >
+    @switch (saveState()) {
+      @case ('saving') {
+        Guardando…
+      }
+      @case ('saved') {
+        Guardado
+      }
+      @case ('error') {
+        Sin conexión
+      }
+      @default {
+        Nuevo
+      }
+    }
+  </span>
+</div>
+
+<app-async-state [loading]="loading()" loadingText="Cargando sueño…" />
+
+@if (!loading()) {
+  <div class="editor-layout">
+    <div class="editor">
+    <section class="editor__section" id="narrativa">
+      <h2 class="editor__section-title">Narrativa</h2>
+      <app-textarea
+        label="¿Qué soñaste?"
+        placeholder="Contá el sueño tal como lo recordás…"
+        [rows]="8"
+        [value]="rawNarrative()"
+        (valueChange)="onNarrativeInput($event)"
+        (focusout)="onTextFieldBlur()"
+      />
+    </section>
+
+    <section class="editor__section" id="tipo">
+      <h2 class="editor__section-title">Tipo de sueño</h2>
+      <div class="chip-row">
+        @for (k of dreamKindValues; track k) {
+          <app-chip [selected]="dreamKind().includes(k)" (click)="toggleDreamKind(k)">
+            {{ dreamKindLabel[k] }}
+          </app-chip>
+        }
+      </div>
+    </section>
+
+    <section class="editor__section" id="cuando">
+      <h2 class="editor__section-title">Cuándo e imágenes</h2>
+      <div class="field-grid">
+        <app-date-field
+          label="Fecha del sueño"
+          [value]="timestamp()"
+          (valueChange)="onTimestampChange($event)"
+        />
+        <app-image-upload-field
+          label="Agregar imagen"
+          [loading]="uploadingDreamImage()"
+          (fileSelected)="onDreamImagePicked($event)"
+        />
+      </div>
+      @if (dreamImages().length > 0) {
+        <app-hero-image-carousel [images]="dreamImages()" />
+        <div class="chip-row">
+          @for (url of dreamImages(); track url; let i = $index) {
+            <app-chip [removable]="true" (remove)="removeDreamImage(url)">
+              Imagen {{ i + 1 }}
+            </app-chip>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="editor__section" id="elementos">
+      <div class="editor__section-head">
+        <h2 class="editor__section-title">Elementos</h2>
+        <app-button
+          variant="ghost"
+          [disabled]="!canSuggest()"
+          [loading]="suggestingElements()"
+          (pressed)="suggestElements()"
+        >
+          Sugerir con IA
+        </app-button>
+      </div>
+
+      @if (aiSuggestionGroups().length > 0) {
+        <article class="card card--glass ai-suggestions">
+          <div class="ai-suggestions__head">
+            <span class="ai-suggestions__title">Sugerencias de IA</span>
+            <button
+              type="button"
+              class="ai-suggestions__close"
+              aria-label="Cerrar sugerencias"
+              (click)="dismissAiSuggestions()"
+            >
+              &times;
+            </button>
+          </div>
+          @for (group of aiSuggestionGroups(); track group.kind) {
+            <div class="ai-suggestions__group">
+              <span class="ai-suggestions__group-title">{{ entityLabel[group.kind] }}</span>
+              @for (row of group.rows; track row.label) {
+                <div class="ai-suggestions__row">
+                  <span>{{ row.label }}</span>
+                  @if (row.match) {
+                    <app-button variant="ghost" (pressed)="attachAiMatch(group.kind, row.match)">
+                      Adjuntar existente
+                    </app-button>
+                  } @else {
+                    <app-button
+                      variant="ghost"
+                      (pressed)="createFromAiSuggestion(group.kind, row.label)"
+                    >
+                      Crear y adjuntar
+                    </app-button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </article>
+      }
+
+      @for (kind of searchableKinds; track kind) {
+        <div class="editor__entity-row">
+          <app-search-and-attach
+            [entityType]="kind"
+            [placeholder]="'Buscar ' + entityLabel[kind].toLowerCase() + '…'"
+            [suggestions]="suggestionsByKind()[kind]"
+            [attached]="attachedByKind()[kind]"
+            [query]="queryByKind()[kind]"
+            (queryChange)="onSearchQueryChange(kind, $event)"
+            (attachItem)="onAttach(kind, $event)"
+            (createNew)="onCreateNew(kind, $event)"
+            (detachItem)="onDetach(kind, $event)"
+          />
+          @if (creatingKind() === kind) {
+            <app-entity-form
+              [entityType]="kind"
+              mode="create"
+              [initialValue]="creatingSeed()"
+              [saving]="creatingSaving()"
+              (save)="onEntityFormSave(kind, $event)"
+              (cancel)="onEntityFormCancel()"
+            />
+          }
+        </div>
+      }
+
+      <div class="editor__entity-row">
+        <div class="editor__feelings-head">
+          <span class="editor__feelings-label">{{ entityLabel['feelings'] }}</span>
+          <app-button variant="ghost" (pressed)="startCreateFeeling()">+ Agregar</app-button>
+        </div>
+        @if (attachedByKind()['feelings'].length > 0) {
+          <div class="chip-row">
+            @for (f of attachedByKind()['feelings']; track f.id) {
+              <app-chip tone="feelings" [removable]="true" (remove)="onDetach('feelings', f.id)">
+                {{ f.label }}
+              </app-chip>
+            }
+          </div>
+        }
+        @if (creatingKind() === 'feelings') {
+          <app-entity-form
+            [entityType]="'feelings'"
+            mode="create"
+            [initialValue]="creatingSeed()"
+            [saving]="creatingSaving()"
+            (save)="onEntityFormSave('feelings', $event)"
+            (cancel)="onEntityFormCancel()"
+          />
+        }
+      </div>
+    </section>
+
+    <section class="editor__section" id="perspectiva">
+      <h2 class="editor__section-title">Perspectiva y lucidez</h2>
+      <div class="chip-row">
+        @for (p of perspectiveValues; track p) {
+          <app-chip [selected]="perspectives().includes(p)" (click)="togglePerspective(p)">
+            {{ perspectiveLabel[p] }}
+          </app-chip>
+        }
+      </div>
+      <app-slider
+        label="Nivel de lucidez"
+        [min]="0"
+        [max]="10"
+        [value]="lucidityLevel()"
+        (valueChange)="onLucidityChange($event)"
+      />
+    </section>
+
+    <section class="editor__section" id="reflexion">
+      <h2 class="editor__section-title">Reflexión</h2>
+      <div class="card-grid">
+        <article class="card card--solid">
+          <h3 class="card__title">Tu reflexión</h3>
+          <app-textarea
+            placeholder="¿Qué te dejó este sueño?"
+            [rows]="5"
+            [value]="userThought()"
+            (valueChange)="onUserThoughtInput($event)"
+            (focusout)="onTextFieldBlur()"
+          />
+        </article>
+        <article class="card card--solid">
+          <div class="editor__section-head">
+            <h3 class="card__title">Lectura de IA</h3>
+            <app-button
+              variant="ghost"
+              [disabled]="!canSuggest()"
+              [loading]="suggestingThought()"
+              (pressed)="suggestThought()"
+            >
+              Sugerir lectura
+            </app-button>
+          </div>
+          @if (aiSummarize(); as summary) {
+            <app-markdown-renderer [content]="summary" />
+          } @else {
+            <p class="editor__empty-hint">Todavía no hay una lectura generada.</p>
+          }
+        </article>
+      </div>
+    </section>
+    </div>
+
+    <nav class="editor-rail" aria-label="Secciones del sueño">
+      <a class="editor-rail__link" href="#narrativa">Narrativa</a>
+      <a class="editor-rail__link" href="#tipo">Tipo de sueño</a>
+      <a class="editor-rail__link" href="#cuando">Cuándo e imágenes</a>
+      <a class="editor-rail__link" href="#elementos">Elementos</a>
+      <a class="editor-rail__link" href="#perspectiva">Perspectiva y lucidez</a>
+      <a class="editor-rail__link" href="#reflexion">Reflexión</a>
+    </nav>
+  </div>
+}

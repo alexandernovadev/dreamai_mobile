@@ -1,0 +1,25 @@
+<div class="signals-entity-edit">
+  <app-async-state
+    [loading]="loading()"
+    loadingText="Cargando…"
+    [error]="error()"
+    (retry)="load()"
+  />
+
+  @if (!loading() && !error()) {
+    <app-entity-form
+      [entityType]="kind()"
+      mode="edit"
+      [initialValue]="initialValue()"
+      [saving]="saving()"
+      (save)="onSave($event)"
+      (cancel)="onCancel()"
+    />
+
+    <div class="signals-entity-edit__danger-zone">
+      <app-button variant="danger" [loading]="deleting()" (pressed)="onDelete()">
+        Eliminar
+      </app-button>
+    </div>
+  }
+</div>
